@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, ScrollView, View, Text, TextInput, Button, StyleSheet, Dimensions, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { SafeAreaView, ScrollView, View, Text, TextInput, Button, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
-// import { LineChart } from 'react-native-chart-kit';
 
-const backendUrl = 'http://10.118.185.251:4000/api/transactions';
+const backendUrl = 'http://192.168.0.132:4000/api/transactions';
 
 export default function App() {
   const [transactions, setTransactions] = useState([]);
@@ -44,9 +43,12 @@ export default function App() {
     }
   };
 
-  const labels = summary.map((item) => item.month);
-  const expenseData = summary.map((item) => Number(item.expenses || 0));
-  const incomeData = summary.map((item) => Number(item.income || 0));
+  const totalExpenses = summary.reduce((sum, item) => sum + Number(item.expenses || 0), 0);
+  const totalIncome = summary.reduce((sum, item) => sum + Number(item.income || 0), 0);
+  const maxAmount = Math.max(
+    ...summary.map((item) => Math.max(Number(item.expenses || 0), Number(item.income || 0))),
+    1
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -57,8 +59,56 @@ export default function App() {
           <Text style={styles.sectionTitle}>Monthly Summary</Text>
           {loading ? (
             <ActivityIndicator size="large" />
+          ) : summary.length > 0 ? (
+            <View>
+              <View style={styles.metricsRow}>
+                <View style={[styles.metricBox, styles.expenseBox]}>
+                  <Text style={styles.metricLabel}>Total Expenses</Text>
+                  <Text style={styles.metricValue}>-${totalExpenses.toFixed(2)}</Text>
+                </View>
+                <View style={[styles.metricBox, styles.incomeBox]}>
+                  <Text style={styles.metricLabel}>Total Income</Text>
+                  <Text style={styles.metricValue}>+${totalIncome.toFixed(2)}</Text>
+                </View>
+              </View>
+              <View style={styles.chartContainer}>
+                {summary.map((item, idx) => {
+                  const expenseHeight = ((Number(item.expenses || 0) / maxAmount) * 200) || 10;
+                  const incomeHeight = ((Number(item.income || 0) / maxAmount) * 200) || 10;
+                  return (
+                    <View key={idx} style={styles.barGroup}>
+                      <View style={styles.barRow}>
+                        <View
+                          style={[
+                            styles.bar,
+                            { height: expenseHeight, backgroundColor: '#ff6b6b', marginRight: 4 },
+                          ]}
+                        />
+                        <View
+                          style={[
+                            styles.bar,
+                            { height: incomeHeight, backgroundColor: '#4caf50' },
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.chartLabel}>{item.month.slice(5)}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+              <View style={styles.legend}>
+                <View style={styles.legendItem}>
+                  <View style={styles.legendSwatchExpense} />
+                  <Text style={styles.legendText}>Expenses</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={styles.legendSwatchIncome} />
+                  <Text style={styles.legendText}>Income</Text>
+                </View>
+              </View>
+            </View>
           ) : (
-            <Text>Chart temporarily disabled for debugging. Summary data: {JSON.stringify(summary)}</Text>
+            <Text>No transactions yet. Add one to see your summary!</Text>
           )}
         </View>
 
@@ -119,41 +169,134 @@ export default function App() {
   );
 }
 
-const chartConfig = {
-  backgroundGradientFrom: '#ffffff',
-  backgroundGradientTo: '#f6f8fb',
-  decimalPlaces: 0,
-  color: () => '#2a2a2a',
-  labelColor: () => '#666',
-  style: { borderRadius: 16 },
-  propsForDots: { r: '4', strokeWidth: '2', stroke: '#ffa726' },
-};
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#eef2f7' },
   content: { padding: 20, paddingBottom: 40 },
   title: { fontSize: 28, fontWeight: '700', marginBottom: 20, textAlign: 'center' },
-  card: { backgroundColor: '#ffffff', borderRadius: 16, padding: 16, marginBottom: 20, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, elevation: 3 },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
   sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: '#d7dce3', borderRadius: 12, padding: 12, marginBottom: 12, backgroundColor: '#fafbff' },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d7dce3',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: '#fafbff',
+  },
   buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  typeButton: { flex: 1, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#d7dce3', marginRight: 8, alignItems: 'center' },
+  typeButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d7dce3',
+    marginRight: 8,
+    alignItems: 'center',
+  },
   typeButtonActive: { backgroundColor: '#4caf50', borderColor: '#4caf50' },
   typeButtonText: { color: '#1a1a1a', fontWeight: '600' },
-  container: { flex: 1, backgroundColor: '#eef2f7' },
-  content: { padding: 20, paddingBottom: 40 },
-  title: { fontSize: 28, fontWeight: '700', marginBottom: 20, textAlign: 'center' },
-  card: { backgroundColor: '#ffffff', borderRadius: 16, padding: 16, marginBottom: 20, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, elevation: 3 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: '#d7dce3', borderRadius: 12, padding: 12, marginBottom: 12, backgroundColor: '#fafbff' },
-  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  typeButton: { flex: 1, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#d7dce3', marginRight: 8, alignItems: 'center' },
-  typeButtonActive: { backgroundColor: '#4caf50', borderColor: '#4caf50' },
-  typeButtonText: { color: '#1a1a1a', fontWeight: '600' },
-  transactionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f1f3f6' },
+  transactionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f3f6',
+  },
   txTitle: { fontSize: 16, fontWeight: '600' },
-  txMeta: { color: '#7b7f88', marginTop: 4 },
+  txMeta: { color: '#7b7f88', marginTop: 4, fontSize: 12 },
   txAmount: { fontSize: 16, fontWeight: '700' },
   expenseText: { color: '#ef476f' },
   incomeText: { color: '#2a9d8f' },
-})
+  chartContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'flex-end',
+    height: 240,
+    marginBottom: 12,
+    paddingHorizontal: 8,
+  },
+  barGroup: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  bar: {
+    width: 14,
+    borderRadius: 4,
+    minHeight: 10,
+  },
+  barRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  chartLabel: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 8,
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  metricBox: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: '#f7f9fc',
+    marginRight: 12,
+  },
+  expenseBox: {
+    backgroundColor: '#fff0f0',
+  },
+  incomeBox: {
+    backgroundColor: '#effaf4',
+    marginRight: 0,
+  },
+  metricLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginBottom: 6,
+  },
+  metricValue: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  legend: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f3f6',
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  legendSwatchExpense: {
+    width: 12,
+    height: 12,
+    backgroundColor: '#ff6b6b',
+    borderRadius: 2,
+  },
+  legendSwatchIncome: {
+    width: 12,
+    height: 12,
+    backgroundColor: '#4caf50',
+    borderRadius: 2,
+  },
+  legendText: {
+    fontSize: 12,
+    color: '#4b5563',
+  },
+});

@@ -42,3 +42,27 @@ A finance tracking full-stack portfolio project with:
 - recurring payments
 - monthly budget targets
 - export transactions to CSV
+
+## Branching and commit guidance
+
+Use branches for anything larger than a small bug fix or documentation change.
+
+- `main` — stable baseline
+- `feature/<name>` — new features, screens, charts, or flows
+- `fix/<name>` — bug fixes and cleanup
+- `chore/<name>` — non-user-facing maintenance, dependency updates, formatting
+
+Commit style:
+
+- `feat:` for new functionality
+- `fix:` for bug fixes
+- `chore:` for project maintenance
+- `docs:` for README or documentation updates
+
+Recommended workflow:
+
+1. Create a feature branch: `git checkout -b feature/add-chart-summary`
+2. Make focused commits with clear messages
+3. Push the branch: `git push -u origin feature/add-chart-summary`
+4. Merge back to `main` after verifying functionality
+
