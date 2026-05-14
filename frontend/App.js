@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, ScrollView, View, Text, TextInput, Button, StyleSheet, ActivityIndicator, TouchableOpacity, Modal } from 'react-native';
+import { SafeAreaView, ScrollView, View, Text, TextInput, Button, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
-import DatePicker from 'react-native-date-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const backendUrl = 'http://192.168.0.132:4000/api/transactions';
 
@@ -46,13 +46,27 @@ export default function App() {
     }
   };
 
-  const handleDateConfirm = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
-    setForm((prev) => ({ ...prev, date: dateStr }));
-    setShowDatePicker(false);
+  const handleDateConfirm = (event, date) => {
+    if (event.type === 'dismissed') {
+      setShowDatePicker(false);
+      return;
+    }
+    if (date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      setForm((prev) => ({ ...prev, date: dateStr }));
+    }
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+  };
+
+  const handleDateCancel = () => {
+    if (Platform.OS === 'ios') {
+      setShowDatePicker(false);
+    }
   };
 
   const openDatePicker = () => {
@@ -146,27 +160,15 @@ export default function App() {
             style={styles.input}
             placeholder="Category"
             value={form.category}
-            onChangeText={(value) => setForm((prev) => ({ ...prev, category: value }))}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Amount"
-            keyboardType="numeric"
-            value={form.amount}
-            onChangeText={(value) => setForm((prev) => ({ ...prev, amount: value }))}
-          />
-          <TouchableOpacity style={styles.dateButton} onPress={openDatePicker}>
-            <Text style={styles.dateButtonText}>
-              {form.date ? `📅 ${form.date}` : '📅 Select Date'}
-            </Text>
-          </TouchableOpacity>
-          <Modal visible={showDatePicker} transparent={true} animationType="slide">
-            <View style={styles.datePickerModal}>
-              <View style={styles.datePickerContent}>
-                <View style={styles.datePickerHeader}>
-                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                    <Text style={styles.datePickerCancel}>Cancel</Text>
-                  </TouchableOpacity>
+          {showDatePicker && (
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={handleDateConfirm}
+              onTouchCancel={handleDateCancel}
+            />
+          )}</TouchableOpacity>
                   <Text style={styles.datePickerTitle}>Select Date</Text>
                   <TouchableOpacity onPress={() => handleDateConfirm(selectedDate)}>
                     <Text style={styles.datePickerDone}>Done</Text>
@@ -346,41 +348,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingBottom: 20,
   },
-  datePickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f3f6',
-  },
-  datePickerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1a1a1a',
-  },
-  datePickerCancel: {
-    fontSize: 16,
-    color: '#999',
-  },
-  datePickerDone: {
-    fontSize: 16,
-    color: '#4caf50',
-    fontWeight: '600',
-  },
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  legendSwatchExpense: {
-    width: 12,
-    height: 12,
-    backgroundColor: '#ff6b6b',
-    borderRadius: 2,
-  },
-  legendSwatchIncome: {
-    width: 12,
+  dawidth: 12,
     height: 12,
     backgroundColor: '#4caf50',
     borderRadius: 2,
