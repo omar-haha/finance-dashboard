@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, ScrollView, View, Text, TextInput, Button, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, Platform } from 'react-native';
+import { SafeAreaView, ScrollView, View, Text, TextInput, Button, StyleSheet, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-const backendUrl = 'http://192.168.0.132:4000/api/transactions';
+const backendUrl = 'http://10.0.0.25:4000/api/transactions';
 
 export default function App() {
   const [transactions, setTransactions] = useState([]);
@@ -43,6 +43,15 @@ export default function App() {
       loadTransactions();
     } catch (error) {
       console.error('Error creating transaction', error.message);
+    }
+  };
+
+  const deleteTransaction = async (id) => {
+    try {
+      await axios.delete(`${backendUrl}/${id}`);
+      loadTransactions();
+    } catch (error) {
+      console.error('Error deleting transaction', error.message);
     }
   };
 
@@ -198,13 +207,18 @@ export default function App() {
           <Text style={styles.sectionTitle}>Recent Transactions</Text>
           {transactions.slice(0, 8).map((tx) => (
             <View key={tx.id} style={styles.transactionRow}>
-              <View>
+              <View style={styles.transactionInfo}>
                 <Text style={styles.txTitle}>{tx.title}</Text>
                 <Text style={styles.txMeta}>{tx.category} • {tx.date}</Text>
               </View>
-              <Text style={[styles.txAmount, tx.type === 'expense' ? styles.expenseText : styles.incomeText]}>
-                {tx.type === 'expense' ? '-' : '+'}${Number(tx.amount).toFixed(2)}
-              </Text>
+              <View style={styles.transactionActions}>
+                <Text style={[styles.txAmount, tx.type === 'expense' ? styles.expenseText : styles.incomeText]}>
+                  {tx.type === 'expense' ? '-' : '+'}${Number(tx.amount).toFixed(2)}
+                </Text>
+                <TouchableOpacity style={styles.deleteButton} onPress={() => deleteTransaction(tx.id)}>
+                  <Text style={styles.deleteButtonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ))}
         </View>
@@ -323,38 +337,44 @@ const styles = StyleSheet.create({
     borderTopColor: '#f1f3f6',
   },
   legendItem: {
-  dateButton: {
-    borderWidth: 1,
-    borderColor: '#d7dce3',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    backgroundColor: '#fafbff',
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  dateButtonText: {
-    fontSize: 16,
-    color: '#1a1a1a',
-    fontWeight: '500',
+  legendSwatchExpense: {
+    width: 12,
+    height: 12,
+    backgroundColor: '#ff6b6b',
+    borderRadius: 2,
+    marginRight: 8,
   },
-  datePickerModal: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  datePickerContent: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 20,
-  },
-  dawidth: 12,
+  legendSwatchIncome: {
+    width: 12,
     height: 12,
     backgroundColor: '#4caf50',
     borderRadius: 2,
+    marginRight: 8,
   },
   legendText: {
     fontSize: 12,
     color: '#4b5563',
+  },
+  transactionInfo: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  transactionActions: {
+    alignItems: 'flex-end',
+  },
+  deleteButton: {
+    marginTop: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    backgroundColor: '#f8d7da',
+    borderRadius: 12,
+  },
+  deleteButtonText: {
+    color: '#9f1c24',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
