@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, ScrollView, View, Text, TextInput, Button, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { SafeAreaView, ScrollView, View, Text, TextInput, Button, StyleSheet, ActivityIndicator, TouchableOpacity, Modal } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
+import DatePicker from 'react-native-date-picker';
 
 const backendUrl = 'http://192.168.0.132:4000/api/transactions';
 
@@ -10,6 +11,8 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ title: '', category: '', amount: '', type: 'expense', date: '' });
   const [summary, setSummary] = useState([]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
     loadTransactions();
@@ -41,6 +44,25 @@ export default function App() {
     } catch (error) {
       console.error('Error creating transaction', error.message);
     }
+  };
+
+  const handleDateConfirm = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    setForm((prev) => ({ ...prev, date: dateStr }));
+    setShowDatePicker(false);
+  };
+
+  const openDatePicker = () => {
+    if (form.date) {
+      const [year, month, day] = form.date.split('-').map(Number);
+      setSelectedDate(new Date(year, month - 1, day));
+    } else {
+      setSelectedDate(new Date());
+    }
+    setShowDatePicker(true);
   };
 
   const totalExpenses = summary.reduce((sum, item) => sum + Number(item.expenses || 0), 0);
@@ -133,12 +155,32 @@ export default function App() {
             value={form.amount}
             onChangeText={(value) => setForm((prev) => ({ ...prev, amount: value }))}
           />
-          <TextInput
-            style={styles.input}
-            placeholder="Date (YYYY-MM-DD)"
-            value={form.date}
-            onChangeText={(value) => setForm((prev) => ({ ...prev, date: value }))}
-          />
+          <TouchableOpacity style={styles.dateButton} onPress={openDatePicker}>
+            <Text style={styles.dateButtonText}>
+              {form.date ? `📅 ${form.date}` : '📅 Select Date'}
+            </Text>
+          </TouchableOpacity>
+          <Modal visible={showDatePicker} transparent={true} animationType="slide">
+            <View style={styles.datePickerModal}>
+              <View style={styles.datePickerContent}>
+                <View style={styles.datePickerHeader}>
+                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                    <Text style={styles.datePickerCancel}>Cancel</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.datePickerTitle}>Select Date</Text>
+                  <TouchableOpacity onPress={() => handleDateConfirm(selectedDate)}>
+                    <Text style={styles.datePickerDone}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+                <DatePicker
+                  date={selectedDate}
+                  onDateChange={setSelectedDate}
+                  mode="date"
+                  textColor="#1a1a1a"
+                />
+              </View>
+            </View>
+          </Modal>
           <View style={styles.buttonRow}>
             <TouchableOpacity style={[styles.typeButton, form.type === 'expense' && styles.typeButtonActive]} onPress={() => setForm((prev) => ({ ...prev, type: 'expense' }))}>
               <Text style={styles.typeButtonText}>Expense</Text>
@@ -279,6 +321,54 @@ const styles = StyleSheet.create({
     borderTopColor: '#f1f3f6',
   },
   legendItem: {
+  dateButton: {
+    borderWidth: 1,
+    borderColor: '#d7dce3',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: '#fafbff',
+    alignItems: 'center',
+  },
+  dateButtonText: {
+    fontSize: 16,
+    color: '#1a1a1a',
+    fontWeight: '500',
+  },
+  datePickerModal: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  datePickerContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 20,
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f3f6',
+  },
+  datePickerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  datePickerCancel: {
+    fontSize: 16,
+    color: '#999',
+  },
+  datePickerDone: {
+    fontSize: 16,
+    color: '#4caf50',
+    fontWeight: '600',
+  },
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
