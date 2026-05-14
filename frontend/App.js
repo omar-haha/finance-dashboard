@@ -160,6 +160,20 @@ export default function App() {
             style={styles.input}
             placeholder="Category"
             value={form.category}
+            onChangeText={(value) => setForm((prev) => ({ ...prev, category: value }))}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Amount"
+            keyboardType="numeric"
+            value={form.amount}
+            onChangeText={(value) => setForm((prev) => ({ ...prev, amount: value }))}
+          />
+          <TouchableOpacity style={styles.dateButton} onPress={openDatePicker}>
+            <Text style={styles.dateButtonText}>
+              {form.date ? `📅 ${form.date}` : '📅 Select Date'}
+            </Text>
+          </TouchableOpacity>
           {showDatePicker && (
             <DateTimePicker
               value={selectedDate}
@@ -168,21 +182,7 @@ export default function App() {
               onChange={handleDateConfirm}
               onTouchCancel={handleDateCancel}
             />
-          )}</TouchableOpacity>
-                  <Text style={styles.datePickerTitle}>Select Date</Text>
-                  <TouchableOpacity onPress={() => handleDateConfirm(selectedDate)}>
-                    <Text style={styles.datePickerDone}>Done</Text>
-                  </TouchableOpacity>
-                </View>
-                <DatePicker
-                  date={selectedDate}
-                  onDateChange={setSelectedDate}
-                  mode="date"
-                  textColor="#1a1a1a"
-                />
-              </View>
-            </View>
-          </Modal>
+          )}
           <View style={styles.buttonRow}>
             <TouchableOpacity style={[styles.typeButton, form.type === 'expense' && styles.typeButtonActive]} onPress={() => setForm((prev) => ({ ...prev, type: 'expense' }))}>
               <Text style={styles.typeButtonText}>Expense</Text>
