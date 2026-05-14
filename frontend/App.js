@@ -43,6 +43,13 @@ export default function App() {
     }
   };
 
+  const totalExpenses = summary.reduce((sum, item) => sum + Number(item.expenses || 0), 0);
+  const totalIncome = summary.reduce((sum, item) => sum + Number(item.income || 0), 0);
+  const maxAmount = Math.max(
+    ...summary.map((item) => Math.max(Number(item.expenses || 0), Number(item.income || 0))),
+    1
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="auto" />
@@ -54,26 +61,33 @@ export default function App() {
             <ActivityIndicator size="large" />
           ) : summary.length > 0 ? (
             <View>
+              <View style={styles.metricsRow}>
+                <View style={[styles.metricBox, styles.expenseBox]}>
+                  <Text style={styles.metricLabel}>Total Expenses</Text>
+                  <Text style={styles.metricValue}>-${totalExpenses.toFixed(2)}</Text>
+                </View>
+                <View style={[styles.metricBox, styles.incomeBox]}>
+                  <Text style={styles.metricLabel}>Total Income</Text>
+                  <Text style={styles.metricValue}>+${totalIncome.toFixed(2)}</Text>
+                </View>
+              </View>
               <View style={styles.chartContainer}>
                 {summary.map((item, idx) => {
-                  const maxAmount = Math.max(
-                    ...summary.map((s) => Math.max(s.expenses || 0, s.income || 0))
-                  );
-                  const expenseHeight = ((item.expenses || 0) / maxAmount) * 200;
-                  const incomeHeight = ((item.income || 0) / maxAmount) * 200;
+                  const expenseHeight = ((Number(item.expenses || 0) / maxAmount) * 200) || 10;
+                  const incomeHeight = ((Number(item.income || 0) / maxAmount) * 200) || 10;
                   return (
                     <View key={idx} style={styles.barGroup}>
-                      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4 }}>
+                      <View style={styles.barRow}>
                         <View
                           style={[
                             styles.bar,
-                            { height: expenseHeight || 10, backgroundColor: '#ff6b6b' },
+                            { height: expenseHeight, backgroundColor: '#ff6b6b', marginRight: 4 },
                           ]}
                         />
                         <View
                           style={[
                             styles.bar,
-                            { height: incomeHeight || 10, backgroundColor: '#4caf50' },
+                            { height: incomeHeight, backgroundColor: '#4caf50' },
                           ]}
                         />
                       </View>
@@ -83,13 +97,13 @@ export default function App() {
                 })}
               </View>
               <View style={styles.legend}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ width: 12, height: 12, backgroundColor: '#ff6b6b' }} />
-                  <Text style={{ fontSize: 12 }}>Expenses</Text>
+                <View style={styles.legendItem}>
+                  <View style={styles.legendSwatchExpense} />
+                  <Text style={styles.legendText}>Expenses</Text>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ width: 12, height: 12, backgroundColor: '#4caf50' }} />
-                  <Text style={{ fontSize: 12 }}>Income</Text>
+                <View style={styles.legendItem}>
+                  <View style={styles.legendSwatchIncome} />
+                  <Text style={styles.legendText}>Income</Text>
                 </View>
               </View>
             </View>
@@ -220,16 +234,69 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     minHeight: 10,
   },
+  barRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
   chartLabel: {
     fontSize: 11,
     color: '#666',
     marginTop: 8,
   },
+  metricsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  metricBox: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: '#f7f9fc',
+    marginRight: 12,
+  },
+  expenseBox: {
+    backgroundColor: '#fff0f0',
+  },
+  incomeBox: {
+    backgroundColor: '#effaf4',
+    marginRight: 0,
+  },
+  metricLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginBottom: 6,
+  },
+  metricValue: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
   legend: {
     flexDirection: 'row',
-    gap: 16,
+    justifyContent: 'space-between',
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#f1f3f6',
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  legendSwatchExpense: {
+    width: 12,
+    height: 12,
+    backgroundColor: '#ff6b6b',
+    borderRadius: 2,
+  },
+  legendSwatchIncome: {
+    width: 12,
+    height: 12,
+    backgroundColor: '#4caf50',
+    borderRadius: 2,
+  },
+  legendText: {
+    fontSize: 12,
+    color: '#4b5563',
   },
 });
