@@ -28,8 +28,7 @@ export default function App() {
             borderTopColor: '#f1f3f6',
             paddingBottom: 4,
           },
-          headerStyle: { backgroundColor: '#ffffff' },
-          headerShadowVisible: false,
+          headerStyle: { backgroundColor: '#ffffff', elevation: 0, shadowOpacity: 0 },
           headerTitleStyle: { fontWeight: '700', fontSize: 18 },
         })}
       >
