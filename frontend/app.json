@@ -4,16 +4,24 @@
     "slug": "finance-dashboard",
     "version": "1.0.0",
     "sdkVersion": "54.0.0",
-    "platforms": ["ios", "android", "web"],
+    "platforms": ["ios", "android"],
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "splash": {
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "updates": {
-      "fallbackToCacheTimeout": 0
+    "android": {
+      "package": "com.harun.financedashboard",
+      "adaptiveIcon": {
+        "backgroundColor": "#2a9d8f"
+      }
     },
-    "assetBundlePatterns": ["**/*"]
+    "updates": {
+      "url": "https://u.expo.dev/REPLACE_WITH_PROJECT_ID"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }
