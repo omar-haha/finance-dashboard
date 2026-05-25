@@ -4,7 +4,10 @@
     "slug": "finance-dashboard",
     "version": "1.0.0",
     "sdkVersion": "54.0.0",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "splash": {
@@ -18,10 +21,16 @@
       }
     },
     "updates": {
-      "url": "https://u.expo.dev/REPLACE_WITH_PROJECT_ID"
+      "url": "https://u.expo.dev/3c4837e9-157f-4bf6-8344-dbb7f417d64e"
     },
     "runtimeVersion": {
       "policy": "appVersion"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3c4837e9-157f-4bf6-8344-dbb7f417d64e"
+      }
+    },
+    "owner": "omar_ha"
   }
 }
