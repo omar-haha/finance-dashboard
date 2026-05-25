@@ -1,68 +1,109 @@
 # Finance Dashboard
 
-A finance tracking full-stack portfolio project with:
+A personal finance tracker for Android. Log income and expenses, visualise spending by category, and track monthly balance — all from your phone.
 
-- React Native frontend (Expo)
-- Node + Express backend
-- SQLite database for transaction storage
+**Stack:** React Native (Expo) · Node.js + Express · PostgreSQL  
+**Deployed:** Backend on Render · Database on Neon · App updates via Expo EAS
 
-## Structure
+---
 
-- `frontend/` — mobile app UI, charts, transaction entry
-- `backend/` — API server, SQLite persistence, monthly expense summary
+## Features
 
-## Getting started
+- Add and delete transactions (income or expense)
+- Native date picker
+- Monthly income vs expense bar chart
+- Net balance tracking
+- Spending breakdown by category with proportional bars
+- Bottom tab navigation (Dashboard · Transactions · Add)
+- OTA updates — new code ships to the phone without reinstalling
+
+---
+
+## Project structure
+
+```
+finance-dashboard/
+├── backend/          Node.js + Express REST API
+│   └── src/
+│       ├── db/       PostgreSQL connection pool
+│       └── routes/   Transaction endpoints
+└── frontend/         React Native app (Expo SDK 54)
+    └── screens/      DashboardScreen, TransactionsScreen, AddTransactionScreen
+```
+
+---
+
+## Running locally
 
 ### Backend
 
-1. `cd backend`
-2. `npm install`
-3. `npm run dev`
+```bash
+cd backend
+cp .env.example .env          # fill in your DATABASE_URL
+npm install
+npm run dev                   # starts on port 4000
+```
+
+Requires a PostgreSQL database. Get one free at [neon.tech](https://neon.tech).
 
 ### Frontend
 
-1. `cd frontend`
-2. `npm install`
-3. `npx expo start`
+```bash
+cd frontend
+npm install
+npx expo start
+```
 
-## Running on Physical Device with Expo Go
+Update `local` in `frontend/config.js` to your machine's local IP if testing on a physical device.
 
-1. Ensure your computer and phone are on the same Wi-Fi network.
-2. Find your computer's local IP address (e.g., `192.168.1.100`):
-   - Linux: `ip addr show` or `hostname -I`
-   - Replace `YOUR_LOCAL_IP` in `frontend/App.js` with your IP.
-3. Start the backend: `cd backend && npm run dev`
-4. Start the frontend: `cd frontend && npx expo start`
-5. Scan the QR code with Expo Go on your Android device.
+---
 
-## Features to build next
+## Deployment
 
-- add authentication
-- category filters and tags
-- recurring payments
-- monthly budget targets
-- export transactions to CSV
+| Service | Purpose | Cost |
+|---|---|---|
+| [Neon](https://neon.tech) | PostgreSQL database | Free |
+| [Render](https://render.com) | Express backend | Free tier |
+| [Expo EAS](https://expo.dev/eas) | Android APK + OTA updates | Free tier |
 
-## Branching and commit guidance
+### Pushing an update to the phone
 
-Use branches for anything larger than a small bug fix or documentation change.
+```bash
+cd frontend
+eas update --branch main --message "describe what changed"
+```
 
-- `main` — stable baseline
-- `feature/<name>` — new features, screens, charts, or flows
-- `fix/<name>` — bug fixes and cleanup
-- `chore/<name>` — non-user-facing maintenance, dependency updates, formatting
+The app picks up the new JS bundle automatically on next launch.
 
-Commit style:
+---
 
-- `feat:` for new functionality
-- `fix:` for bug fixes
-- `chore:` for project maintenance
-- `docs:` for README or documentation updates
+## API endpoints
 
-Recommended workflow:
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/transactions` | All transactions, newest first |
+| `POST` | `/api/transactions` | Create a transaction |
+| `DELETE` | `/api/transactions/:id` | Delete a transaction |
+| `GET` | `/api/transactions/summary/monthly` | Income vs expenses grouped by month |
+| `GET` | `/api/transactions/summary/categories` | Expense totals grouped by category |
 
-1. Create a feature branch: `git checkout -b feature/add-chart-summary`
-2. Make focused commits with clear messages
-3. Push the branch: `git push -u origin feature/add-chart-summary`
-4. Merge back to `main` after verifying functionality
+---
 
+## Git workflow
+
+| Branch prefix | Used for |
+|---|---|
+| `feature/` | New screens, charts, or user-facing functionality |
+| `fix/` | Bug fixes |
+| `chore/` | Dependencies, config, non-user-facing maintenance |
+| `docs/` | README and documentation only |
+
+Commit style: `feat:` · `fix:` · `chore:` · `docs:`
+
+---
+
+## Planned features
+
+- Search and filter transactions by date range or category
+- Monthly budget limits per category with progress tracking
+- CSV export

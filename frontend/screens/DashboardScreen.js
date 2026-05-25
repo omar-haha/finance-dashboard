@@ -4,18 +4,30 @@ import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import { BACKEND_URL } from '../config';
 
+const CATEGORY_COLORS = [
+  '#2a9d8f', '#e76f51', '#457b9d', '#e9c46a', '#8338ec',
+  '#fb5607', '#3a86ff', '#06d6a0', '#ef476f', '#ffd166',
+];
+
 export default function DashboardScreen() {
   const [summary, setSummary] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
       setLoading(true);
-      axios
-        .get(`${BACKEND_URL}/summary/monthly`)
-        .then((res) => { if (active) setSummary(res.data.reverse()); })
-        .catch((err) => console.error('Error loading summary', err.message))
+      Promise.all([
+        axios.get(`${BACKEND_URL}/summary/monthly`),
+        axios.get(`${BACKEND_URL}/summary/categories`),
+      ])
+        .then(([monthlyRes, catRes]) => {
+          if (!active) return;
+          setSummary(monthlyRes.data.reverse());
+          setCategories(catRes.data);
+        })
+        .catch((err) => console.error('Error loading dashboard', err.message))
         .finally(() => { if (active) setLoading(false); });
       return () => { active = false; };
     }, [])
@@ -27,60 +39,88 @@ export default function DashboardScreen() {
     ...summary.map((item) => Math.max(Number(item.expenses || 0), Number(item.income || 0))),
     1
   );
+  const categoryTotal = categories.reduce((sum, c) => sum + Number(c.total), 0);
+
+  if (loading) return <ActivityIndicator size="large" style={styles.loader} />;
+
+  if (summary.length === 0 && categories.length === 0) {
+    return (
+      <View style={styles.empty}>
+        <Text style={styles.emptyText}>No transactions yet. Add one to see your summary!</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {loading ? (
-        <ActivityIndicator size="large" style={styles.loader} />
-      ) : summary.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyText}>No transactions yet. Add one to see your summary!</Text>
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Monthly Overview</Text>
+        <View style={styles.metricsRow}>
+          <View style={[styles.metricBox, styles.expenseBox]}>
+            <Text style={styles.metricLabel}>Total Expenses</Text>
+            <Text style={[styles.metricValue, styles.expenseText]}>-${totalExpenses.toFixed(2)}</Text>
+          </View>
+          <View style={[styles.metricBox, styles.incomeBox]}>
+            <Text style={styles.metricLabel}>Total Income</Text>
+            <Text style={[styles.metricValue, styles.incomeText]}>+${totalIncome.toFixed(2)}</Text>
+          </View>
         </View>
-      ) : (
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Monthly Overview</Text>
-          <View style={styles.metricsRow}>
-            <View style={[styles.metricBox, styles.expenseBox]}>
-              <Text style={styles.metricLabel}>Total Expenses</Text>
-              <Text style={[styles.metricValue, styles.expenseText]}>-${totalExpenses.toFixed(2)}</Text>
-            </View>
-            <View style={[styles.metricBox, styles.incomeBox]}>
-              <Text style={styles.metricLabel}>Total Income</Text>
-              <Text style={[styles.metricValue, styles.incomeText]}>+${totalIncome.toFixed(2)}</Text>
-            </View>
-          </View>
-          <View style={styles.netBox}>
-            <Text style={styles.metricLabel}>Net Balance</Text>
-            <Text style={[styles.netValue, (totalIncome - totalExpenses) >= 0 ? styles.incomeText : styles.expenseText]}>
-              {(totalIncome - totalExpenses) >= 0 ? '+' : ''}${(totalIncome - totalExpenses).toFixed(2)}
-            </Text>
-          </View>
-          <Text style={styles.chartTitle}>Income vs Expenses by Month</Text>
-          <View style={styles.chartContainer}>
-            {summary.map((item, idx) => {
-              const expenseHeight = ((Number(item.expenses || 0) / maxAmount) * 180) || 6;
-              const incomeHeight = ((Number(item.income || 0) / maxAmount) * 180) || 6;
-              return (
-                <View key={idx} style={styles.barGroup}>
-                  <View style={styles.barRow}>
-                    <View style={[styles.bar, { height: expenseHeight, backgroundColor: '#ef476f' }]} />
-                    <View style={[styles.bar, { height: incomeHeight, backgroundColor: '#2a9d8f' }]} />
-                  </View>
-                  <Text style={styles.chartLabel}>{item.month.slice(5)}</Text>
+        <View style={styles.netBox}>
+          <Text style={styles.metricLabel}>Net Balance</Text>
+          <Text style={[styles.netValue, (totalIncome - totalExpenses) >= 0 ? styles.incomeText : styles.expenseText]}>
+            {(totalIncome - totalExpenses) >= 0 ? '+' : ''}${(totalIncome - totalExpenses).toFixed(2)}
+          </Text>
+        </View>
+        <Text style={styles.chartTitle}>Income vs Expenses by Month</Text>
+        <View style={styles.chartContainer}>
+          {summary.map((item, idx) => {
+            const expenseHeight = ((Number(item.expenses || 0) / maxAmount) * 180) || 6;
+            const incomeHeight = ((Number(item.income || 0) / maxAmount) * 180) || 6;
+            return (
+              <View key={idx} style={styles.barGroup}>
+                <View style={styles.barRow}>
+                  <View style={[styles.bar, { height: expenseHeight, backgroundColor: '#ef476f' }]} />
+                  <View style={[styles.bar, { height: incomeHeight, backgroundColor: '#2a9d8f' }]} />
                 </View>
-              );
-            })}
+                <Text style={styles.chartLabel}>{item.month.slice(5)}</Text>
+              </View>
+            );
+          })}
+        </View>
+        <View style={styles.legend}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendSwatch, { backgroundColor: '#ef476f' }]} />
+            <Text style={styles.legendText}>Expenses</Text>
           </View>
-          <View style={styles.legend}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendSwatch, { backgroundColor: '#ef476f' }]} />
-              <Text style={styles.legendText}>Expenses</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendSwatch, { backgroundColor: '#2a9d8f' }]} />
-              <Text style={styles.legendText}>Income</Text>
-            </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendSwatch, { backgroundColor: '#2a9d8f' }]} />
+            <Text style={styles.legendText}>Income</Text>
           </View>
+        </View>
+      </View>
+
+      {categories.length > 0 && (
+        <View style={[styles.card, styles.cardTop]}>
+          <Text style={styles.sectionTitle}>Spending by Category</Text>
+          {categories.map((cat, idx) => {
+            const pct = categoryTotal > 0 ? (Number(cat.total) / categoryTotal) : 0;
+            const color = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
+            return (
+              <View key={cat.category} style={styles.catRow}>
+                <View style={styles.catHeader}>
+                  <View style={styles.catLabelRow}>
+                    <View style={[styles.catDot, { backgroundColor: color }]} />
+                    <Text style={styles.catName}>{cat.category}</Text>
+                    <Text style={styles.catCount}>{cat.count} tx</Text>
+                  </View>
+                  <Text style={styles.catAmount}>${Number(cat.total).toFixed(2)}</Text>
+                </View>
+                <View style={styles.barTrack}>
+                  <View style={[styles.barFill, { width: `${pct * 100}%`, backgroundColor: color }]} />
+                </View>
+              </View>
+            );
+          })}
         </View>
       )}
     </ScrollView>
@@ -90,8 +130,8 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#eef2f7' },
   content: { padding: 16, paddingBottom: 32 },
-  loader: { marginTop: 60 },
-  empty: { marginTop: 60, alignItems: 'center' },
+  loader: { marginTop: 80 },
+  empty: { flex: 1, marginTop: 80, alignItems: 'center' },
   emptyText: { color: '#6b7280', fontSize: 15 },
   card: {
     backgroundColor: '#fff',
@@ -102,6 +142,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
+  cardTop: { marginTop: 16 },
   sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16 },
   metricsRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
   metricBox: { flex: 1, padding: 14, borderRadius: 14 },
@@ -111,12 +152,7 @@ const styles = StyleSheet.create({
   metricValue: { fontSize: 18, fontWeight: '700' },
   expenseText: { color: '#ef476f' },
   incomeText: { color: '#2a9d8f' },
-  netBox: {
-    backgroundColor: '#f4f6fb',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 20,
-  },
+  netBox: { backgroundColor: '#f4f6fb', borderRadius: 14, padding: 14, marginBottom: 20 },
   netValue: { fontSize: 22, fontWeight: '800' },
   chartTitle: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 12 },
   chartContainer: {
@@ -134,4 +170,13 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendSwatch: { width: 10, height: 10, borderRadius: 2 },
   legendText: { fontSize: 12, color: '#4b5563' },
+  catRow: { marginBottom: 16 },
+  catHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  catLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  catDot: { width: 10, height: 10, borderRadius: 5 },
+  catName: { fontSize: 14, fontWeight: '600', color: '#1a1a1a' },
+  catCount: { fontSize: 12, color: '#9ca3af' },
+  catAmount: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
+  barTrack: { height: 6, backgroundColor: '#f1f3f6', borderRadius: 3, overflow: 'hidden' },
+  barFill: { height: 6, borderRadius: 3 },
 });

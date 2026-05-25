@@ -43,6 +43,23 @@ router.get('/summary/monthly', async (req, res) => {
   }
 });
 
+router.get('/summary/categories', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT category,
+             SUM(amount) as total,
+             COUNT(*) as count
+      FROM transactions
+      WHERE type = 'expense'
+      GROUP BY category
+      ORDER BY total DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.delete('/:id', async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM transactions WHERE id = $1', [req.params.id]);
