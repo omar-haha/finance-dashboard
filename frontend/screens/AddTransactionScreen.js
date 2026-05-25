@@ -55,28 +55,38 @@ export default function AddTransactionScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.card}>
+        <Text style={styles.fieldLabel}>Title</Text>
         <TextInput
           style={styles.input}
-          placeholder="Title"
+          placeholder="e.g. Grocery run"
+          placeholderTextColor="#b0b7c3"
           value={form.title}
           onChangeText={(v) => setForm((p) => ({ ...p, title: v }))}
         />
+
+        <Text style={styles.fieldLabel}>Category</Text>
         <TextInput
           style={styles.input}
-          placeholder="Category"
+          placeholder="e.g. Food, Transport, Rent"
+          placeholderTextColor="#b0b7c3"
           value={form.category}
           onChangeText={(v) => setForm((p) => ({ ...p, category: v }))}
         />
+
+        <Text style={styles.fieldLabel}>Amount</Text>
         <TextInput
           style={styles.input}
-          placeholder="Amount"
+          placeholder="0.00"
+          placeholderTextColor="#b0b7c3"
           keyboardType="numeric"
           value={form.amount}
           onChangeText={(v) => setForm((p) => ({ ...p, amount: v }))}
         />
+
+        <Text style={styles.fieldLabel}>Date</Text>
         <TouchableOpacity style={styles.dateButton} onPress={openDatePicker}>
-          <Text style={styles.dateButtonText}>
-            {form.date ? `📅 ${form.date}` : '📅 Select Date'}
+          <Text style={[styles.dateButtonText, !form.date && styles.datePlaceholder]}>
+            {form.date ? form.date : 'Select a date'}
           </Text>
         </TouchableOpacity>
         {showDatePicker && (
@@ -87,12 +97,14 @@ export default function AddTransactionScreen() {
             onChange={handleDateChange}
           />
         )}
+
+        <Text style={styles.fieldLabel}>Type</Text>
         <View style={styles.typeRow}>
           <TouchableOpacity
             style={[styles.typeButton, form.type === 'expense' && styles.typeButtonExpense]}
             onPress={() => setForm((p) => ({ ...p, type: 'expense' }))}
           >
-            <Text style={[styles.typeButtonText, form.type === 'expense' && styles.typeButtonTextActive]}>
+            <Text style={[styles.typeButtonText, form.type === 'expense' && styles.typeButtonTextExpense]}>
               Expense
             </Text>
           </TouchableOpacity>
@@ -100,11 +112,12 @@ export default function AddTransactionScreen() {
             style={[styles.typeButton, form.type === 'income' && styles.typeButtonIncome]}
             onPress={() => setForm((p) => ({ ...p, type: 'income' }))}
           >
-            <Text style={[styles.typeButtonText, form.type === 'income' && styles.typeButtonTextActive]}>
+            <Text style={[styles.typeButtonText, form.type === 'income' && styles.typeButtonTextIncome]}>
               Income
             </Text>
           </TouchableOpacity>
         </View>
+
         <TouchableOpacity style={styles.saveButton} onPress={submit} disabled={saving}>
           <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save Transaction'}</Text>
         </TouchableOpacity>
@@ -125,26 +138,34 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 6,
+    marginTop: 4,
+  },
   input: {
     borderWidth: 1,
     borderColor: '#d7dce3',
     borderRadius: 12,
     padding: 13,
-    marginBottom: 12,
+    marginBottom: 14,
     backgroundColor: '#fafbff',
     fontSize: 15,
+    color: '#1a1a1a',
   },
   dateButton: {
     borderWidth: 1,
     borderColor: '#d7dce3',
     borderRadius: 12,
     padding: 13,
-    marginBottom: 12,
+    marginBottom: 14,
     backgroundColor: '#fafbff',
-    alignItems: 'center',
   },
   dateButtonText: { fontSize: 15, color: '#1a1a1a', fontWeight: '500' },
-  typeRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  datePlaceholder: { color: '#b0b7c3', fontWeight: '400' },
+  typeRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   typeButton: {
     flex: 1,
     padding: 13,
@@ -156,8 +177,9 @@ const styles = StyleSheet.create({
   },
   typeButtonExpense: { backgroundColor: '#fff0f3', borderColor: '#ef476f' },
   typeButtonIncome: { backgroundColor: '#edfaf7', borderColor: '#2a9d8f' },
-  typeButtonText: { fontWeight: '600', color: '#6b7280' },
-  typeButtonTextActive: { color: '#1a1a1a' },
+  typeButtonText: { fontWeight: '600', color: '#9ca3af', fontSize: 15 },
+  typeButtonTextExpense: { color: '#ef476f' },
+  typeButtonTextIncome: { color: '#2a9d8f' },
   saveButton: {
     backgroundColor: '#2a9d8f',
     borderRadius: 12,
