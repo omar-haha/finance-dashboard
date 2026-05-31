@@ -14,7 +14,6 @@ export default function AddTransactionScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [saving, setSaving] = useState(false);
-
   const [categories, setCategories] = useState([]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -29,7 +28,12 @@ export default function AddTransactionScreen() {
   );
 
   const openDatePicker = () => {
-    setSelectedDate(form.date ? new Date(...form.date.split('-').map((v, i) => i === 1 ? Number(v) - 1 : Number(v))) : new Date());
+    if (form.date) {
+      const [y, m, d] = form.date.split('-').map(Number);
+      setSelectedDate(new Date(y, m - 1, d));
+    } else {
+      setSelectedDate(new Date());
+    }
     setShowDatePicker(true);
   };
 
@@ -85,81 +89,84 @@ export default function AddTransactionScreen() {
 
   return (
     <>
-      <StatusBar style="dark" />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          <Text style={styles.fieldLabel}>TITLE</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. Grocery run"
-            placeholderTextColor="#94a3b8"
-            value={form.title}
-            onChangeText={(v) => setForm((p) => ({ ...p, title: v }))}
+      <StatusBar style="light" />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        overScrollMode="never"
+      >
+        <Text style={styles.fieldLabel}>TITLE</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g. Grocery run"
+          placeholderTextColor="#4b5563"
+          value={form.title}
+          onChangeText={(v) => setForm((p) => ({ ...p, title: v }))}
+        />
+
+        <Text style={styles.fieldLabel}>CATEGORY</Text>
+        <TouchableOpacity style={styles.selectRow} onPress={() => setShowCategoryModal(true)}>
+          <Text style={[styles.selectText, !form.category && styles.selectPlaceholder]}>
+            {form.category || 'Select a category'}
+          </Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.fieldLabel}>AMOUNT</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="0.00"
+          placeholderTextColor="#4b5563"
+          keyboardType="numeric"
+          value={form.amount}
+          onChangeText={(v) => setForm((p) => ({ ...p, amount: v }))}
+        />
+
+        <Text style={styles.fieldLabel}>DATE</Text>
+        <TouchableOpacity style={styles.selectRow} onPress={openDatePicker}>
+          <Text style={[styles.selectText, !form.date && styles.selectPlaceholder]}>
+            {form.date || 'Select a date'}
+          </Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={handleDateChange}
           />
+        )}
 
-          <Text style={styles.fieldLabel}>CATEGORY</Text>
-          <TouchableOpacity style={styles.pickerRow} onPress={() => setShowCategoryModal(true)}>
-            <Text style={[styles.pickerText, !form.category && styles.pickerPlaceholder]}>
-              {form.category || 'Select a category'}
-            </Text>
-            <Text style={styles.chevron}>›</Text>
+        <Text style={styles.fieldLabel}>TYPE</Text>
+        <View style={styles.typeRow}>
+          <TouchableOpacity
+            style={[styles.typeBtn, form.type === 'expense' && styles.typeBtnExpense]}
+            onPress={() => setForm((p) => ({ ...p, type: 'expense' }))}
+          >
+            <Text style={[styles.typeBtnText, form.type === 'expense' && styles.typeBtnTextExpense]}>Expense</Text>
           </TouchableOpacity>
-
-          <Text style={styles.fieldLabel}>AMOUNT</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="0.00"
-            placeholderTextColor="#94a3b8"
-            keyboardType="numeric"
-            value={form.amount}
-            onChangeText={(v) => setForm((p) => ({ ...p, amount: v }))}
-          />
-
-          <Text style={styles.fieldLabel}>DATE</Text>
-          <TouchableOpacity style={styles.pickerRow} onPress={openDatePicker}>
-            <Text style={[styles.pickerText, !form.date && styles.pickerPlaceholder]}>
-              {form.date || 'Select a date'}
-            </Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-          {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={handleDateChange}
-            />
-          )}
-
-          <Text style={styles.fieldLabel}>TYPE</Text>
-          <View style={styles.typeRow}>
-            <TouchableOpacity
-              style={[styles.typeButton, form.type === 'expense' && styles.typeButtonExpense]}
-              onPress={() => setForm((p) => ({ ...p, type: 'expense' }))}
-            >
-              <Text style={[styles.typeButtonText, form.type === 'expense' && styles.typeButtonTextExpense]}>Expense</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.typeButton, form.type === 'income' && styles.typeButtonIncome]}
-              onPress={() => setForm((p) => ({ ...p, type: 'income' }))}
-            >
-              <Text style={[styles.typeButtonText, form.type === 'income' && styles.typeButtonTextIncome]}>Income</Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity style={styles.saveButton} onPress={submit} disabled={saving}>
-            <Text style={styles.saveButtonText}>{saving ? 'Saving…' : 'Save Transaction'}</Text>
+          <TouchableOpacity
+            style={[styles.typeBtn, form.type === 'income' && styles.typeBtnIncome]}
+            onPress={() => setForm((p) => ({ ...p, type: 'income' }))}
+          >
+            <Text style={[styles.typeBtnText, form.type === 'income' && styles.typeBtnTextIncome]}>Income</Text>
           </TouchableOpacity>
         </View>
+
+        <TouchableOpacity style={styles.saveBtn} onPress={submit} disabled={saving}>
+          <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save Transaction'}</Text>
+        </TouchableOpacity>
       </ScrollView>
 
-      <Modal visible={showCategoryModal} transparent animationType="slide" onRequestClose={() => setShowCategoryModal(false)}>
+      <Modal visible={showCategoryModal} transparent animationType="slide" onRequestClose={() => { setShowCategoryModal(false); setAddingNew(false); setNewCategoryName(''); }}>
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => { setShowCategoryModal(false); setAddingNew(false); setNewCategoryName(''); }} />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheet}>
           <View style={styles.sheetHandle} />
           <Text style={styles.sheetTitle}>Category</Text>
           {categories.length === 0 && !addingNew && (
-            <Text style={styles.sheetEmpty}>No categories yet. Add your first one below.</Text>
+            <Text style={styles.sheetEmpty}>No categories yet. Add your first below.</Text>
           )}
           <FlatList
             data={categories}
@@ -179,7 +186,7 @@ export default function AddTransactionScreen() {
                 <TextInput
                   style={styles.newInput}
                   placeholder="Category name"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor="#4b5563"
                   value={newCategoryName}
                   onChangeText={setNewCategoryName}
                   autoFocus
@@ -189,7 +196,7 @@ export default function AddTransactionScreen() {
                 <TouchableOpacity style={styles.newSaveBtn} onPress={saveNewCategory}>
                   <Text style={styles.newSaveBtnText}>Add</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => { setAddingNew(false); setNewCategoryName(''); }} style={styles.newCancelBtn}>
+                <TouchableOpacity onPress={() => { setAddingNew(false); setNewCategoryName(''); }}>
                   <Text style={styles.newCancelText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
@@ -206,83 +213,91 @@ export default function AddTransactionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  content: { padding: 16, paddingBottom: 32 },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+  container: { flex: 1, backgroundColor: '#000000' },
+  content: { padding: 20, paddingBottom: 40 },
+
+  fieldLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#4b5563',
+    letterSpacing: 1.5,
+    marginBottom: 8,
+    marginTop: 20,
   },
-  fieldLabel: { fontSize: 10, fontWeight: '700', color: '#94a3b8', letterSpacing: 1.2, marginBottom: 8, marginTop: 8 },
   input: {
-    borderWidth: 1.5,
-    borderColor: '#e2e8f0',
+    backgroundColor: '#1c1c1e',
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 4,
-    backgroundColor: '#f8fafc',
+    padding: 16,
     fontSize: 15,
-    color: '#0f172a',
+    color: '#ffffff',
   },
-  pickerRow: {
+  selectRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#e2e8f0',
+    backgroundColor: '#1c1c1e',
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 4,
-    backgroundColor: '#f8fafc',
+    padding: 16,
   },
-  pickerText: { fontSize: 15, color: '#0f172a', fontWeight: '500' },
-  pickerPlaceholder: { color: '#94a3b8', fontWeight: '400' },
-  chevron: { fontSize: 22, color: '#94a3b8', lineHeight: 24 },
-  typeRow: { flexDirection: 'row', gap: 10, marginBottom: 24, marginTop: 4 },
-  typeButton: {
-    flex: 1, padding: 14, borderRadius: 12, borderWidth: 1.5,
-    borderColor: '#e2e8f0', alignItems: 'center', backgroundColor: '#f8fafc',
+  selectText: { fontSize: 15, color: '#ffffff', fontWeight: '500' },
+  selectPlaceholder: { color: '#4b5563', fontWeight: '400' },
+  chevron: { fontSize: 22, color: '#4b5563', lineHeight: 24 },
+
+  typeRow: { flexDirection: 'row', gap: 10 },
+  typeBtn: {
+    flex: 1,
+    padding: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: '#1c1c1e',
   },
-  typeButtonExpense: { backgroundColor: '#fff0f3', borderColor: '#ef476f' },
-  typeButtonIncome: { backgroundColor: '#edfaf7', borderColor: '#2a9d8f' },
-  typeButtonText: { fontWeight: '700', color: '#94a3b8', fontSize: 15 },
-  typeButtonTextExpense: { color: '#ef476f' },
-  typeButtonTextIncome: { color: '#2a9d8f' },
-  saveButton: { backgroundColor: '#0f172a', borderRadius: 14, padding: 16, alignItems: 'center' },
-  saveButtonText: { color: '#ffffff', fontWeight: '700', fontSize: 16, letterSpacing: 0.3 },
-  // Modal
-  overlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.5)' },
+  typeBtnExpense: { backgroundColor: '#2d1515' },
+  typeBtnIncome: { backgroundColor: '#0d2a25' },
+  typeBtnText: { fontWeight: '700', color: '#4b5563', fontSize: 15 },
+  typeBtnTextExpense: { color: '#f87171' },
+  typeBtnTextIncome: { color: '#2dd4bf' },
+
+  saveBtn: {
+    backgroundColor: '#2dd4bf',
+    borderRadius: 14,
+    padding: 17,
+    alignItems: 'center',
+    marginTop: 32,
+  },
+  saveBtnText: { color: '#000000', fontWeight: '800', fontSize: 16 },
+
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
   sheet: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0f0f0f',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 20,
     paddingBottom: 36,
     maxHeight: '70%',
+    borderTopWidth: 1,
+    borderColor: '#1c1c1e',
   },
-  sheetHandle: { width: 36, height: 4, backgroundColor: '#e2e8f0', borderRadius: 2, alignSelf: 'center', marginTop: 14, marginBottom: 18 },
-  sheetTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a', marginBottom: 12 },
-  sheetEmpty: { color: '#94a3b8', fontSize: 14, textAlign: 'center', paddingVertical: 24 },
+  sheetHandle: { width: 36, height: 4, backgroundColor: '#2c2c2e', borderRadius: 2, alignSelf: 'center', marginTop: 14, marginBottom: 18 },
+  sheetTitle: { fontSize: 18, fontWeight: '700', color: '#ffffff', marginBottom: 12 },
+  sheetEmpty: { color: '#4b5563', fontSize: 14, textAlign: 'center', paddingVertical: 24 },
   catList: { maxHeight: 300 },
-  catOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 2 },
-  catOptionText: { fontSize: 16, color: '#0f172a', fontWeight: '500' },
-  catCheck: { fontSize: 16, color: '#2a9d8f', fontWeight: '700' },
-  catSep: { height: 1, backgroundColor: '#f1f5f9' },
-  sheetFooter: { paddingTop: 14, borderTopWidth: 1, borderTopColor: '#f1f5f9', marginTop: 4 },
+  catOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15 },
+  catOptionText: { fontSize: 16, color: '#ffffff', fontWeight: '500' },
+  catCheck: { fontSize: 16, color: '#2dd4bf', fontWeight: '700' },
+  catSep: { height: 1, backgroundColor: '#1c1c1e' },
+  sheetFooter: { paddingTop: 14, borderTopWidth: 1, borderTopColor: '#1c1c1e', marginTop: 4 },
   addNewBtn: { paddingVertical: 14, alignItems: 'center' },
-  addNewBtnText: { fontSize: 15, fontWeight: '700', color: '#2a9d8f' },
+  addNewBtnText: { fontSize: 15, fontWeight: '700', color: '#2dd4bf' },
   newRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   newInput: {
-    flex: 1, borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 10,
-    padding: 12, fontSize: 15, color: '#0f172a', backgroundColor: '#f8fafc',
+    flex: 1,
+    backgroundColor: '#1c1c1e',
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    color: '#ffffff',
   },
-  newSaveBtn: { backgroundColor: '#0f172a', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12 },
-  newSaveBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 14 },
-  newCancelBtn: { paddingHorizontal: 6, paddingVertical: 12 },
-  newCancelText: { color: '#94a3b8', fontSize: 14 },
+  newSaveBtn: { backgroundColor: '#2dd4bf', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12 },
+  newSaveBtnText: { color: '#000000', fontWeight: '800', fontSize: 14 },
+  newCancelText: { color: '#4b5563', fontSize: 14, paddingHorizontal: 6, paddingVertical: 12 },
 });
