@@ -7,6 +7,14 @@ A personal finance tracker for Android. Log income and expenses, visualise spend
 
 ---
 
+## Screenshots
+
+<img width="540" height="1170" alt="Screenshot_20260531_152241_Finance Dashboard" src="https://github.com/user-attachments/assets/cd0d2847-456f-4e0a-9525-e59cdbefa19e" />
+
+<img width="540" height="1170" alt="Screenshot_20260531_152333_Finance Dashboard" src="https://github.com/user-attachments/assets/f7aa9c79-8d9a-4d46-a94c-88c416bc0524" />
+
+---
+
 ## Features
 
 - Add and delete transactions (income or expense)
