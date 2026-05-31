@@ -1,23 +1,24 @@
 # Finance Dashboard
 
-A personal finance tracker for Android. Log income and expenses, visualise spending by category, and track monthly balance — all from your phone.
+A personal finance tracker for Android. Log income and expenses, visualise spending by category, and track your monthly balance — all from your phone.
 
-**Stack:** React Native (Expo) · Node.js + Express · PostgreSQL  
+**Stack:** React Native (Expo SDK 54) · Node.js + Express · PostgreSQL  
 **Deployed:** Backend on Render · Database on Neon · App updates via Expo EAS
 
 ---
 
 ## Features
 
-- Add and delete transactions (income or expense)
-- Native date picker
-- Monthly income vs expense bar chart
-- Net balance tracking
-- Spending breakdown by category with proportional bars
-- Filter transactions by category, type, and date range
-- User-defined categories with a bottom-sheet picker (no manual typing)
-- Bottom tab navigation (Dashboard · Transactions · Add)
-- OTA updates — new code ships to the phone without reinstalling
+- Add and delete transactions (income or expense) with confirmation prompts
+- User-defined categories with a bottom-sheet picker — create and delete categories in-app
+- Native Android date picker
+- Dashboard with large net balance hero, income/expense stats, and monthly bar chart
+- Spending by category — toggle between proportional bar view and a donut chart
+- Filter transactions by category (pill dropdown), type, and date range
+- Transactions grouped by date with WealthSimple-style activity layout
+- Bottom tab navigation (Dashboard · Transactions · Add Transaction)
+- Full dark theme throughout
+- OTA updates — new JS ships to the phone without reinstalling the APK
 
 ---
 
@@ -25,12 +26,19 @@ A personal finance tracker for Android. Log income and expenses, visualise spend
 
 ```
 finance-dashboard/
-├── backend/          Node.js + Express REST API
+├── backend/
+│   ├── scripts/
+│   │   └── seed.js          Sample data for local/dev use
 │   └── src/
-│       ├── db/       PostgreSQL connection pool
-│       └── routes/   Transaction endpoints
-└── frontend/         React Native app (Expo SDK 54)
-    └── screens/      DashboardScreen, TransactionsScreen, AddTransactionScreen
+│       ├── db/              PostgreSQL connection and table init
+│       └── routes/          transactions.js · categories.js
+└── frontend/
+    ├── screens/
+    │   ├── DashboardScreen.js
+    │   ├── TransactionsScreen.js
+    │   └── AddTransactionScreen.js
+    ├── App.js               Navigator shell (SafeAreaProvider + bottom tabs)
+    └── config.js            API base URL (dev/prod switch via __DEV__)
 ```
 
 ---
@@ -41,12 +49,16 @@ finance-dashboard/
 
 ```bash
 cd backend
-cp .env.example .env          # fill in your DATABASE_URL
+cp .env.example .env    # add your DATABASE_URL (get a free DB at neon.tech)
 npm install
-npm run dev                   # starts on port 4000
+npm run dev             # starts on port 4000
 ```
 
-Requires a PostgreSQL database. Get one free at [neon.tech](https://neon.tech).
+Seed sample data (optional):
+
+```bash
+npm run seed            # inserts 9 categories + 22 sample transactions
+```
 
 ### Frontend
 
@@ -56,7 +68,7 @@ npm install
 npx expo start
 ```
 
-Update `local` in `frontend/config.js` to your machine's local IP if testing on a physical device.
+Update `localBase` in `frontend/config.js` to your machine's local IP when testing on a physical device.
 
 ---
 
@@ -75,15 +87,22 @@ cd frontend
 eas update --branch main --message "describe what changed"
 ```
 
-The app picks up the new JS bundle automatically on next launch.
+The app downloads the new JS bundle on next launch and applies it on the following open.
+
+### First-time APK build
+
+```bash
+cd frontend
+eas build --platform android --profile preview
+```
 
 ---
 
-## API endpoints
+## API reference
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/transactions` | All transactions — filter by `?category=`, `?type=`, `?from=`, `?to=` |
+| `GET` | `/api/transactions` | All transactions — filter via `?category=`, `?type=`, `?from=`, `?to=` |
 | `POST` | `/api/transactions` | Create a transaction |
 | `DELETE` | `/api/transactions/:id` | Delete a transaction |
 | `GET` | `/api/transactions/summary/monthly` | Income vs expenses grouped by month |
