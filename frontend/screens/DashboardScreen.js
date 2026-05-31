@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { ScrollView, View, Text, StyleSheet, ActivityIndicator, SafeAreaView } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, ActivityIndicator, SafeAreaView, useWindowDimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
 import { BACKEND_URL } from '../config';
 
@@ -41,10 +42,12 @@ export default function DashboardScreen() {
     1
   );
   const categoryTotal = categories.reduce((s, c) => s + Number(c.total), 0);
+  const { height: screenHeight } = useWindowDimensions();
 
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
+        <StatusBar style="dark" />
         <ActivityIndicator size="large" color="#2dd4bf" />
       </SafeAreaView>
     );
@@ -52,12 +55,13 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <StatusBar style="light" />
+      <ScrollView style={styles.container} contentContainerStyle={[styles.content, { minHeight: screenHeight }]} showsVerticalScrollIndicator={false}>
 
         {/* Hero balance card */}
         <View style={styles.hero}>
           <Text style={styles.heroLabel}>NET BALANCE</Text>
-          <Text style={[styles.heroAmount, net < 0 && styles.heroAmountNegative]}>
+          <Text style={[styles.heroAmount, net < 0 && styles.heroAmountNegative]} allowFontScaling={false}>
             {net >= 0 ? '+' : '-'}${Math.abs(net).toFixed(2)}
           </Text>
           <View style={styles.heroStats}>
@@ -74,9 +78,11 @@ export default function DashboardScreen() {
         </View>
 
         {summary.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No transactions yet</Text>
-            <Text style={styles.emptySubtitle}>Add your first transaction to see your overview.</Text>
+          <View style={styles.emptyWrapper}>
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyTitle}>No transactions yet</Text>
+              <Text style={styles.emptySubtitle}>Add your first transaction to see your overview.</Text>
+            </View>
           </View>
         ) : (
           <>
@@ -207,13 +213,20 @@ const styles = StyleSheet.create({
   },
 
   // Empty state
+  emptyWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 16,
+  },
   emptyCard: {
     backgroundColor: '#ffffff',
-    margin: 16,
     borderRadius: 20,
     padding: 32,
     alignItems: 'center',
     elevation: 2,
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
   },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a', marginBottom: 8 },
   emptySubtitle: { fontSize: 14, color: '#94a3b8', textAlign: 'center' },

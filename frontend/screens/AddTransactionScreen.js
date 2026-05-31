@@ -4,6 +4,7 @@ import {
   Platform, Alert, Modal, FlatList, KeyboardAvoidingView,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { StatusBar } from 'expo-status-bar';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
 import { BACKEND_URL, CATEGORIES_URL } from '../config';
@@ -84,6 +85,7 @@ export default function AddTransactionScreen() {
 
   return (
     <>
+      <StatusBar style="dark" />
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
           <Text style={styles.fieldLabel}>TITLE</Text>
