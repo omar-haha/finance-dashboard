@@ -1,19 +1,24 @@
 import React, { useState, useCallback } from 'react';
-import { ScrollView, View, Text, StyleSheet, ActivityIndicator, SafeAreaView, useWindowDimensions } from 'react-native';
+import {
+  ScrollView, View, Text, StyleSheet, ActivityIndicator,
+  useWindowDimensions,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
 import { BACKEND_URL } from '../config';
 
 const CATEGORY_COLORS = [
-  '#2dd4bf', '#f97316', '#6366f1', '#f59e0b', '#8b5cf6',
-  '#ec4899', '#3b82f6', '#10b981', '#ef4444', '#84cc16',
+  '#2dd4bf', '#f97316', '#818cf8', '#f59e0b',
+  '#c084fc', '#fb7185', '#60a5fa', '#34d399',
 ];
 
 export default function DashboardScreen() {
   const [summary, setSummary] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { height: screenHeight } = useWindowDimensions();
 
   useFocusEffect(
     useCallback(() => {
@@ -42,26 +47,32 @@ export default function DashboardScreen() {
     1
   );
   const categoryTotal = categories.reduce((s, c) => s + Number(c.total), 0);
-  const { height: screenHeight } = useWindowDimensions();
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <StatusBar style="dark" />
-        <ActivityIndicator size="large" color="#2dd4bf" />
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <StatusBar style="light" />
+        <ActivityIndicator size="large" color="#2dd4bf" style={{ marginTop: 80 }} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.screen} edges={['top']}>
       <StatusBar style="light" />
-      <ScrollView style={styles.container} contentContainerStyle={[styles.content, { minHeight: screenHeight }]} showsVerticalScrollIndicator={false}>
-
-        {/* Hero balance card */}
-        <View style={styles.hero}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{ paddingBottom: 32 }}
+        showsVerticalScrollIndicator={false}
+        overScrollMode="never"
+      >
+        {/* Balance hero */}
+        <View style={[styles.hero, { minHeight: screenHeight * 0.38 }]}>
           <Text style={styles.heroLabel}>NET BALANCE</Text>
-          <Text style={[styles.heroAmount, net < 0 && styles.heroAmountNegative]} allowFontScaling={false}>
+          <Text
+            style={[styles.heroAmount, net < 0 && styles.heroAmountNeg]}
+            allowFontScaling={false}
+          >
             {net >= 0 ? '+' : '-'}${Math.abs(net).toFixed(2)}
           </Text>
           <View style={styles.heroStats}>
@@ -78,25 +89,23 @@ export default function DashboardScreen() {
         </View>
 
         {summary.length === 0 ? (
-          <View style={styles.emptyWrapper}>
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>No transactions yet</Text>
-              <Text style={styles.emptySubtitle}>Add your first transaction to see your overview.</Text>
-            </View>
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyTitle}>No transactions yet</Text>
+            <Text style={styles.emptySubtitle}>Add your first to see your overview</Text>
           </View>
         ) : (
           <>
             {/* Monthly chart */}
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>MONTHLY BREAKDOWN</Text>
-              <View style={styles.chartContainer}>
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>MONTHLY BREAKDOWN</Text>
+              <View style={styles.chartRow}>
                 {summary.map((item, idx) => {
-                  const expH = ((Number(item.expenses || 0) / maxAmount) * 160) || 4;
-                  const incH = ((Number(item.income || 0) / maxAmount) * 160) || 4;
+                  const expH = ((Number(item.expenses || 0) / maxAmount) * 140) || 4;
+                  const incH = ((Number(item.income || 0) / maxAmount) * 140) || 4;
                   return (
                     <View key={idx} style={styles.barGroup}>
-                      <View style={styles.barRow}>
-                        <View style={[styles.bar, { height: expH, backgroundColor: '#ef476f' }]} />
+                      <View style={styles.barPair}>
+                        <View style={[styles.bar, { height: expH, backgroundColor: '#f87171' }]} />
                         <View style={[styles.bar, { height: incH, backgroundColor: '#2dd4bf' }]} />
                       </View>
                       <Text style={styles.barLabel}>{item.month.slice(5)}</Text>
@@ -106,7 +115,7 @@ export default function DashboardScreen() {
               </View>
               <View style={styles.legend}>
                 <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#ef476f' }]} />
+                  <View style={[styles.legendDot, { backgroundColor: '#f87171' }]} />
                   <Text style={styles.legendText}>Expenses</Text>
                 </View>
                 <View style={styles.legendItem}>
@@ -116,16 +125,19 @@ export default function DashboardScreen() {
               </View>
             </View>
 
+            {/* Separator */}
+            <View style={styles.separator} />
+
             {/* Category breakdown */}
             {categories.length > 0 && (
-              <View style={styles.card}>
-                <Text style={styles.cardLabel}>SPENDING BY CATEGORY</Text>
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>SPENDING BY CATEGORY</Text>
                 {categories.map((cat, idx) => {
                   const pct = categoryTotal > 0 ? Number(cat.total) / categoryTotal : 0;
                   const color = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
                   return (
                     <View key={cat.category} style={styles.catRow}>
-                      <View style={styles.catMeta}>
+                      <View style={styles.catHeader}>
                         <View style={styles.catLeft}>
                           <View style={[styles.catDot, { backgroundColor: color }]} />
                           <Text style={styles.catName}>{cat.category}</Text>
@@ -151,112 +163,87 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#0f172a' },
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  content: { paddingBottom: 32 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc' },
+  screen: { flex: 1, backgroundColor: '#000000' },
+  scroll: { flex: 1, backgroundColor: '#000000' },
 
-  // Hero
   hero: {
-    backgroundColor: '#0f172a',
     paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingTop: 32,
     paddingBottom: 32,
+    justifyContent: 'center',
   },
   heroLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#475569',
+    color: '#4b5563',
     letterSpacing: 1.5,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   heroAmount: {
-    fontSize: 48,
+    fontSize: 52,
     fontWeight: '800',
-    color: '#f8fafc',
-    marginBottom: 28,
+    color: '#ffffff',
     letterSpacing: -1,
+    marginBottom: 32,
   },
-  heroAmountNegative: { color: '#f87171' },
+  heroAmountNeg: { color: '#f87171' },
   heroStats: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1e293b',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: '#1c1c1e',
+    borderRadius: 18,
+    padding: 18,
   },
   heroStat: { flex: 1, alignItems: 'center' },
-  heroStatLabel: { fontSize: 10, fontWeight: '600', color: '#64748b', letterSpacing: 1.2, marginBottom: 4 },
-  heroStatIncome: { fontSize: 16, fontWeight: '700', color: '#2dd4bf' },
-  heroStatExpense: { fontSize: 16, fontWeight: '700', color: '#f87171' },
-  heroStatDivider: { width: 1, height: 32, backgroundColor: '#334155' },
-
-  // Cards
-  card: {
-    backgroundColor: '#ffffff',
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  cardLabel: {
-    fontSize: 11,
+  heroStatLabel: {
+    fontSize: 10,
     fontWeight: '600',
-    color: '#94a3b8',
+    color: '#4b5563',
+    letterSpacing: 1.2,
+    marginBottom: 6,
+  },
+  heroStatIncome: { fontSize: 17, fontWeight: '700', color: '#2dd4bf' },
+  heroStatExpense: { fontSize: 17, fontWeight: '700', color: '#f87171' },
+  heroStatDivider: { width: 1, height: 36, backgroundColor: '#2c2c2e' },
+
+  emptyContainer: { padding: 32, alignItems: 'center', marginTop: 16 },
+  emptyTitle: { fontSize: 17, fontWeight: '700', color: '#ffffff', marginBottom: 8 },
+  emptySubtitle: { fontSize: 14, color: '#4b5563' },
+
+  separator: { height: 1, backgroundColor: '#1c1c1e', marginHorizontal: 24, marginVertical: 8 },
+
+  section: { paddingHorizontal: 24, paddingVertical: 20 },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4b5563',
     letterSpacing: 1.5,
-    marginBottom: 16,
+    marginBottom: 20,
   },
 
-  // Empty state
-  emptyWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 16,
-  },
-  emptyCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 32,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-  },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a', marginBottom: 8 },
-  emptySubtitle: { fontSize: 14, color: '#94a3b8', textAlign: 'center' },
-
-  // Chart
-  chartContainer: {
+  chartRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'flex-end',
-    height: 180,
+    height: 160,
     marginBottom: 16,
   },
   barGroup: { alignItems: 'center', flex: 1 },
-  barRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 3 },
-  bar: { width: 12, borderRadius: 6, minHeight: 4 },
-  barLabel: { fontSize: 11, color: '#94a3b8', marginTop: 8, fontWeight: '500' },
-  legend: { flexDirection: 'row', gap: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
+  barPair: { flexDirection: 'row', alignItems: 'flex-end', gap: 3 },
+  bar: { width: 11, borderRadius: 4, minHeight: 4 },
+  barLabel: { fontSize: 10, color: '#4b5563', marginTop: 8, fontWeight: '600' },
+  legend: { flexDirection: 'row', gap: 20 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontSize: 12, color: '#64748b', fontWeight: '500' },
+  legendDot: { width: 7, height: 7, borderRadius: 4 },
+  legendText: { fontSize: 12, color: '#8e8e93', fontWeight: '500' },
 
-  // Categories
-  catRow: { marginBottom: 16 },
-  catMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  catRow: { marginBottom: 18 },
+  catHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   catLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  catRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  catDot: { width: 10, height: 10, borderRadius: 5 },
-  catName: { fontSize: 14, fontWeight: '600', color: '#0f172a' },
-  catAmount: { fontSize: 14, fontWeight: '700', color: '#0f172a' },
-  catPct: { fontSize: 12, color: '#94a3b8', fontWeight: '500', minWidth: 32, textAlign: 'right' },
-  barTrack: { height: 6, backgroundColor: '#f1f5f9', borderRadius: 3, overflow: 'hidden' },
-  barFill: { height: 6, borderRadius: 3 },
+  catRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  catDot: { width: 9, height: 9, borderRadius: 5 },
+  catName: { fontSize: 14, fontWeight: '600', color: '#ffffff' },
+  catAmount: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
+  catPct: { fontSize: 12, color: '#4b5563', minWidth: 30, textAlign: 'right' },
+  barTrack: { height: 4, backgroundColor: '#1c1c1e', borderRadius: 2, overflow: 'hidden' },
+  barFill: { height: 4, borderRadius: 2 },
 });

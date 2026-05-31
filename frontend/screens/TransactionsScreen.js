@@ -15,11 +15,26 @@ function formatDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function formatDateHeader(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d)
+    .toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    .toUpperCase();
+}
+
+function groupByDate(transactions) {
+  const map = {};
+  for (const tx of transactions) {
+    if (!map[tx.date]) map[tx.date] = [];
+    map[tx.date].push(tx);
+  }
+  return Object.entries(map).sort(([a], [b]) => b.localeCompare(a));
+}
+
 export default function TransactionsScreen() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-
   const [category, setCategory] = useState('');
   const [type, setType] = useState('all');
   const [from, setFrom] = useState(null);
@@ -62,61 +77,73 @@ export default function TransactionsScreen() {
     if (Platform.OS === 'android') setPickerTarget(null);
   };
 
+  const groups = groupByDate(transactions);
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <StatusBar style="dark" />
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+      overScrollMode="never"
+    >
+      <StatusBar style="light" />
 
-      {/* Filter toggle */}
-      <TouchableOpacity style={styles.filterToggle} onPress={() => setFiltersOpen((v) => !v)} activeOpacity={0.7}>
-        <View style={styles.filterToggleLeft}>
-          <Text style={styles.filterToggleText}>Filter</Text>
-          {isFiltered && <View style={styles.filterActiveDot} />}
-        </View>
-        {isFiltered ? (
-          <TouchableOpacity onPress={clearFilters} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text style={styles.clearText}>Clear</Text>
+      {/* Filter pills row */}
+      <View style={styles.filterRow}>
+        <TouchableOpacity
+          style={[styles.pill, filtersOpen && styles.pillActive]}
+          onPress={() => setFiltersOpen((v) => !v)}
+        >
+          <Text style={[styles.pillText, filtersOpen && styles.pillTextActive]}>
+            Filters {isFiltered ? '·' : '▾'}
+          </Text>
+        </TouchableOpacity>
+        {isFiltered && (
+          <TouchableOpacity style={styles.pill} onPress={clearFilters}>
+            <Text style={styles.pillText}>Clear ✕</Text>
           </TouchableOpacity>
-        ) : (
-          <Text style={styles.filterChevron}>{filtersOpen ? '▲' : '▼'}</Text>
         )}
-      </TouchableOpacity>
+      </View>
 
+      {/* Filter panel */}
       {filtersOpen && (
-        <View style={styles.filterCard}>
+        <View style={styles.filterPanel}>
           <Text style={styles.filterLabel}>CATEGORY</Text>
           <TextInput
             style={styles.filterInput}
             placeholder="e.g. Food"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor="#4b5563"
             value={category}
             onChangeText={setCategory}
             returnKeyType="search"
             onSubmitEditing={fetchTransactions}
           />
-
           <Text style={styles.filterLabel}>TYPE</Text>
           <View style={styles.typeRow}>
             {TYPE_OPTIONS.map((opt) => (
               <TouchableOpacity
                 key={opt}
-                style={[styles.typeChip, type === opt && styles.typeChipActive]}
+                style={[styles.typePill, type === opt && styles.typePillActive]}
                 onPress={() => setType(opt)}
               >
-                <Text style={[styles.typeChipText, type === opt && styles.typeChipTextActive]}>
+                <Text style={[styles.typePillText, type === opt && styles.typePillTextActive]}>
                   {opt.charAt(0).toUpperCase() + opt.slice(1)}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-
           <Text style={styles.filterLabel}>DATE RANGE</Text>
           <View style={styles.dateRow}>
-            <TouchableOpacity style={styles.dateChip} onPress={() => setPickerTarget('from')}>
-              <Text style={[styles.dateChipText, !from && styles.datePlaceholder]}>{from ? formatDate(from) : 'From'}</Text>
+            <TouchableOpacity style={styles.datePill} onPress={() => setPickerTarget('from')}>
+              <Text style={[styles.datePillText, !from && styles.datePillPlaceholder]}>
+                {from ? formatDate(from) : 'From'}
+              </Text>
             </TouchableOpacity>
             <Text style={styles.dateSep}>—</Text>
-            <TouchableOpacity style={styles.dateChip} onPress={() => setPickerTarget('to')}>
-              <Text style={[styles.dateChipText, !to && styles.datePlaceholder]}>{to ? formatDate(to) : 'To'}</Text>
+            <TouchableOpacity style={styles.datePill} onPress={() => setPickerTarget('to')}>
+              <Text style={[styles.datePillText, !to && styles.datePillPlaceholder]}>
+                {to ? formatDate(to) : 'To'}
+              </Text>
             </TouchableOpacity>
           </View>
           {pickerTarget && (
@@ -130,154 +157,143 @@ export default function TransactionsScreen() {
         </View>
       )}
 
-      {/* Transaction list */}
       {loading ? (
-        <ActivityIndicator size="large" color="#2a9d8f" style={styles.loader} />
+        <ActivityIndicator color="#2dd4bf" style={{ marginTop: 60 }} />
       ) : transactions.length === 0 ? (
-        <View style={styles.emptyCard}>
+        <View style={styles.empty}>
           <Text style={styles.emptyTitle}>{isFiltered ? 'No matches' : 'No transactions yet'}</Text>
           <Text style={styles.emptySubtitle}>{isFiltered ? 'Try adjusting your filters.' : 'Add your first transaction.'}</Text>
         </View>
       ) : (
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>
-            {isFiltered ? `${transactions.length} RESULT${transactions.length !== 1 ? 'S' : ''}` : 'ALL TRANSACTIONS'}
-          </Text>
-          {transactions.map((tx, idx) => (
-            <View key={tx.id} style={[styles.row, idx === transactions.length - 1 && styles.rowLast]}>
-              <View style={[styles.typeBar, tx.type === 'expense' ? styles.typeBarExpense : styles.typeBarIncome]} />
-              <View style={styles.rowInfo}>
-                <Text style={styles.txTitle}>{tx.title}</Text>
-                <Text style={styles.txMeta}>{tx.category} · {tx.date}</Text>
-              </View>
-              <View style={styles.rowActions}>
-                <Text style={[styles.txAmount, tx.type === 'expense' ? styles.expenseText : styles.incomeText]}>
-                  {tx.type === 'expense' ? '-' : '+'}${Number(tx.amount).toFixed(2)}
-                </Text>
-                <TouchableOpacity style={styles.deleteButton} onPress={() => deleteTransaction(tx.id)}>
-                  <Text style={styles.deleteButtonText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
+        <>
+          {isFiltered && (
+            <Text style={styles.resultCount}>
+              {transactions.length} result{transactions.length !== 1 ? 's' : ''}
+            </Text>
+          )}
+          {groups.map(([date, items]) => (
+            <View key={date}>
+              <Text style={styles.dateHeader}>{formatDateHeader(date)}</Text>
+              {items.map((tx, idx) => (
+                <View key={tx.id} style={[styles.txRow, idx < items.length - 1 && styles.txRowBorder]}>
+                  <View style={[styles.txIcon, tx.type === 'expense' ? styles.txIconExpense : styles.txIconIncome]}>
+                    <Text style={styles.txIconText}>{tx.category.charAt(0).toUpperCase()}</Text>
+                  </View>
+                  <View style={styles.txInfo}>
+                    <Text style={styles.txTitle}>{tx.title}</Text>
+                    <Text style={styles.txMeta}>{tx.category}</Text>
+                  </View>
+                  <View style={styles.txRight}>
+                    <Text style={[styles.txAmount, tx.type === 'expense' ? styles.expenseText : styles.incomeText]}>
+                      {tx.type === 'expense' ? '–' : '+'} ${Number(tx.amount).toFixed(2)}
+                    </Text>
+                    <TouchableOpacity onPress={() => deleteTransaction(tx.id)}>
+                      <Text style={styles.deleteText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
             </View>
           ))}
-        </View>
+        </>
       )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  content: { padding: 16, paddingBottom: 32 },
-  loader: { marginTop: 60 },
+  container: { flex: 1, backgroundColor: '#000000' },
+  content: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 32 },
 
-  filterToggle: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    marginBottom: 10,
-    elevation: 2,
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-  },
-  filterToggleLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  filterToggleText: { fontSize: 15, fontWeight: '600', color: '#0f172a' },
-  filterActiveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#2a9d8f' },
-  filterChevron: { fontSize: 11, color: '#94a3b8' },
-  clearText: { fontSize: 13, color: '#ef476f', fontWeight: '600' },
-
-  filterCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 10,
-    elevation: 2,
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-  },
-  filterLabel: { fontSize: 10, fontWeight: '700', color: '#94a3b8', letterSpacing: 1.2, marginBottom: 8, marginTop: 4 },
-  filterInput: {
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 10,
-    padding: 11,
-    fontSize: 15,
-    color: '#0f172a',
-    backgroundColor: '#f8fafc',
-    marginBottom: 14,
-  },
-  typeRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
-  typeChip: {
+  filterRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  pill: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
+    backgroundColor: '#1c1c1e',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#f8fafc',
+    borderColor: '#2c2c2e',
   },
-  typeChipActive: { backgroundColor: '#0f172a', borderColor: '#0f172a' },
-  typeChipText: { fontSize: 13, fontWeight: '600', color: '#64748b' },
-  typeChipTextActive: { color: '#ffffff' },
-  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dateChip: {
-    flex: 1, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10,
-    padding: 11, backgroundColor: '#f8fafc', alignItems: 'center',
-  },
-  dateChipText: { fontSize: 14, color: '#0f172a', fontWeight: '500' },
-  datePlaceholder: { color: '#94a3b8', fontWeight: '400' },
-  dateSep: { color: '#94a3b8', fontSize: 16 },
+  pillActive: { backgroundColor: '#2c2c2e', borderColor: '#4b5563' },
+  pillText: { fontSize: 13, fontWeight: '600', color: '#8e8e93' },
+  pillTextActive: { color: '#ffffff' },
 
-  emptyCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 32,
-    alignItems: 'center',
-    marginTop: 8,
-    elevation: 2,
-  },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a', marginBottom: 6 },
-  emptySubtitle: { fontSize: 14, color: '#94a3b8' },
-
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
+  filterPanel: {
+    backgroundColor: '#0f0f0f',
+    borderRadius: 16,
     padding: 16,
-    elevation: 3,
-    shadowColor: '#0f172a',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#1c1c1e',
   },
-  cardLabel: { fontSize: 10, fontWeight: '700', color: '#94a3b8', letterSpacing: 1.5, marginBottom: 12, paddingHorizontal: 4 },
-  row: {
+  filterLabel: { fontSize: 10, fontWeight: '700', color: '#4b5563', letterSpacing: 1.2, marginBottom: 8, marginTop: 4 },
+  filterInput: {
+    backgroundColor: '#1c1c1e',
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    color: '#ffffff',
+    marginBottom: 14,
+  },
+  typeRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  typePill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#1c1c1e',
+  },
+  typePillActive: { backgroundColor: '#2dd4bf' },
+  typePillText: { fontSize: 13, fontWeight: '600', color: '#8e8e93' },
+  typePillTextActive: { color: '#000000' },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  datePill: {
+    flex: 1,
+    backgroundColor: '#1c1c1e',
+    borderRadius: 10,
+    padding: 12,
+    alignItems: 'center',
+  },
+  datePillText: { fontSize: 14, color: '#ffffff', fontWeight: '500' },
+  datePillPlaceholder: { color: '#4b5563' },
+  dateSep: { color: '#4b5563', fontSize: 16 },
+
+  empty: { paddingTop: 60, alignItems: 'center' },
+  emptyTitle: { fontSize: 17, fontWeight: '700', color: '#ffffff', marginBottom: 8 },
+  emptySubtitle: { fontSize: 14, color: '#4b5563' },
+
+  resultCount: { fontSize: 13, color: '#4b5563', fontWeight: '600', marginBottom: 16 },
+
+  dateHeader: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4b5563',
+    letterSpacing: 1.2,
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  txRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 13,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    paddingVertical: 14,
   },
-  rowLast: { borderBottomWidth: 0 },
-  typeBar: { width: 3, height: 36, borderRadius: 2, marginRight: 12 },
-  typeBarExpense: { backgroundColor: '#ef476f' },
-  typeBarIncome: { backgroundColor: '#2a9d8f' },
-  rowInfo: { flex: 1 },
-  rowActions: { alignItems: 'flex-end' },
-  txTitle: { fontSize: 15, fontWeight: '600', color: '#0f172a' },
-  txMeta: { color: '#94a3b8', marginTop: 3, fontSize: 12, fontWeight: '500' },
-  txAmount: { fontSize: 15, fontWeight: '700' },
-  expenseText: { color: '#ef476f' },
-  incomeText: { color: '#2a9d8f' },
-  deleteButton: {
-    marginTop: 5,
-    paddingVertical: 3,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff0f3',
-    borderRadius: 8,
+  txRowBorder: { borderBottomWidth: 1, borderBottomColor: '#1c1c1e' },
+  txIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
   },
-  deleteButtonText: { color: '#ef476f', fontSize: 11, fontWeight: '700' },
+  txIconExpense: { backgroundColor: '#2d1515' },
+  txIconIncome: { backgroundColor: '#0d2a25' },
+  txIconText: { fontSize: 16, fontWeight: '700', color: '#ffffff' },
+  txInfo: { flex: 1 },
+  txTitle: { fontSize: 15, fontWeight: '600', color: '#ffffff', marginBottom: 3 },
+  txMeta: { fontSize: 13, color: '#4b5563' },
+  txRight: { alignItems: 'flex-end' },
+  txAmount: { fontSize: 15, fontWeight: '700', marginBottom: 4 },
+  expenseText: { color: '#f87171' },
+  incomeText: { color: '#2dd4bf' },
+  deleteText: { fontSize: 11, color: '#4b5563', fontWeight: '600' },
 });
