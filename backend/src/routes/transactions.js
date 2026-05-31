@@ -3,8 +3,21 @@ const router = express.Router();
 const { pool } = require('../db/db');
 
 router.get('/', async (req, res) => {
+  const { category, from, to, type } = req.query;
+  const conditions = [];
+  const params = [];
+
+  if (category) { params.push(category); conditions.push(`LOWER(category) = LOWER($${params.length})`); }
+  if (from)     { params.push(from);     conditions.push(`date >= $${params.length}`); }
+  if (to)       { params.push(to);       conditions.push(`date <= $${params.length}`); }
+  if (type)     { params.push(type);     conditions.push(`type = $${params.length}`); }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   try {
-    const { rows } = await pool.query('SELECT * FROM transactions ORDER BY date DESC');
+    const { rows } = await pool.query(
+      `SELECT * FROM transactions ${where} ORDER BY date DESC`,
+      params
+    );
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -14,6 +14,7 @@ A personal finance tracker for Android. Log income and expenses, visualise spend
 - Monthly income vs expense bar chart
 - Net balance tracking
 - Spending breakdown by category with proportional bars
+- Filter transactions by category, type, and date range
 - Bottom tab navigation (Dashboard · Transactions · Add)
 - OTA updates — new code ships to the phone without reinstalling
 
@@ -81,7 +82,7 @@ The app picks up the new JS bundle automatically on next launch.
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/transactions` | All transactions, newest first |
+| `GET` | `/api/transactions` | All transactions — filter by `?category=`, `?type=`, `?from=`, `?to=` |
 | `POST` | `/api/transactions` | Create a transaction |
 | `DELETE` | `/api/transactions/:id` | Delete a transaction |
 | `GET` | `/api/transactions/summary/monthly` | Income vs expenses grouped by month |
@@ -104,6 +105,5 @@ Commit style: `feat:` · `fix:` · `chore:` · `docs:`
 
 ## Planned features
 
-- Search and filter transactions by date range or category
 - Monthly budget limits per category with progress tracking
 - CSV export
