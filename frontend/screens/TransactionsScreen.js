@@ -1,13 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import {
   ScrollView, View, Text, StyleSheet, TouchableOpacity,
-  ActivityIndicator, TextInput, Platform,
+  ActivityIndicator, Platform, Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
-import { BACKEND_URL } from '../config';
+import { BACKEND_URL, CATEGORIES_URL } from '../config';
 
 const TYPE_OPTIONS = ['all', 'expense', 'income'];
 
@@ -33,38 +33,64 @@ function groupByDate(transactions) {
 
 export default function TransactionsScreen() {
   const [transactions, setTransactions] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [category, setCategory] = useState('');
+
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [type, setType] = useState('all');
   const [from, setFrom] = useState(null);
   const [to, setTo] = useState(null);
   const [pickerTarget, setPickerTarget] = useState(null);
 
-  const isFiltered = category.trim() || type !== 'all' || from || to;
+  const isFiltered = selectedCategory || type !== 'all' || from || to;
+
+  useFocusEffect(
+    useCallback(() => {
+      axios.get(CATEGORIES_URL)
+        .then(res => setCategories(res.data))
+        .catch(err => console.error('Error loading categories', err.message));
+    }, [])
+  );
 
   const fetchTransactions = useCallback(() => {
     setLoading(true);
     const params = {};
-    if (category.trim()) params.category = category.trim();
+    if (selectedCategory) params.category = selectedCategory;
     if (type !== 'all') params.type = type;
     if (from) params.from = formatDate(from);
     if (to) params.to = formatDate(to);
     axios
       .get(BACKEND_URL, { params })
-      .then((res) => setTransactions(res.data))
-      .catch((err) => console.error('Error loading transactions', err.message))
+      .then(res => setTransactions(res.data))
+      .catch(err => console.error('Error loading transactions', err.message))
       .finally(() => setLoading(false));
-  }, [category, type, from, to]);
+  }, [selectedCategory, type, from, to]);
 
   useFocusEffect(fetchTransactions);
 
-  const clearFilters = () => { setCategory(''); setType('all'); setFrom(null); setTo(null); };
+  const clearFilters = () => {
+    setSelectedCategory('');
+    setType('all');
+    setFrom(null);
+    setTo(null);
+  };
+
+  const confirmDelete = (id) => {
+    Alert.alert(
+      'Delete Transaction',
+      'Are you sure? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => deleteTransaction(id) },
+      ]
+    );
+  };
 
   const deleteTransaction = async (id) => {
     try {
       await axios.delete(`${BACKEND_URL}/${id}`);
-      setTransactions((prev) => prev.filter((tx) => tx.id !== id));
+      setTransactions(prev => prev.filter(tx => tx.id !== id));
     } catch (err) {
       console.error('Error deleting transaction', err.message);
     }
@@ -88,11 +114,11 @@ export default function TransactionsScreen() {
     >
       <StatusBar style="light" />
 
-      {/* Filter pills row */}
+      {/* Filter toggle row */}
       <View style={styles.filterRow}>
         <TouchableOpacity
           style={[styles.pill, filtersOpen && styles.pillActive]}
-          onPress={() => setFiltersOpen((v) => !v)}
+          onPress={() => setFiltersOpen(v => !v)}
         >
           <Text style={[styles.pillText, filtersOpen && styles.pillTextActive]}>
             Filters {isFiltered ? '·' : '▾'}
@@ -108,19 +134,38 @@ export default function TransactionsScreen() {
       {/* Filter panel */}
       {filtersOpen && (
         <View style={styles.filterPanel}>
+
+          {/* Category dropdown */}
           <Text style={styles.filterLabel}>CATEGORY</Text>
-          <TextInput
-            style={styles.filterInput}
-            placeholder="e.g. Food"
-            placeholderTextColor="#4b5563"
-            value={category}
-            onChangeText={setCategory}
-            returnKeyType="search"
-            onSubmitEditing={fetchTransactions}
-          />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.catScroll}
+            contentContainerStyle={styles.catScrollContent}
+          >
+            <TouchableOpacity
+              style={[styles.catPill, !selectedCategory && styles.catPillActive]}
+              onPress={() => setSelectedCategory('')}
+            >
+              <Text style={[styles.catPillText, !selectedCategory && styles.catPillTextActive]}>All</Text>
+            </TouchableOpacity>
+            {categories.map(cat => (
+              <TouchableOpacity
+                key={cat.id}
+                style={[styles.catPill, selectedCategory === cat.name && styles.catPillActive]}
+                onPress={() => setSelectedCategory(selectedCategory === cat.name ? '' : cat.name)}
+              >
+                <Text style={[styles.catPillText, selectedCategory === cat.name && styles.catPillTextActive]}>
+                  {cat.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Type */}
           <Text style={styles.filterLabel}>TYPE</Text>
           <View style={styles.typeRow}>
-            {TYPE_OPTIONS.map((opt) => (
+            {TYPE_OPTIONS.map(opt => (
               <TouchableOpacity
                 key={opt}
                 style={[styles.typePill, type === opt && styles.typePillActive]}
@@ -132,6 +177,8 @@ export default function TransactionsScreen() {
               </TouchableOpacity>
             ))}
           </View>
+
+          {/* Date range */}
           <Text style={styles.filterLabel}>DATE RANGE</Text>
           <View style={styles.dateRow}>
             <TouchableOpacity style={styles.datePill} onPress={() => setPickerTarget('from')}>
@@ -157,6 +204,7 @@ export default function TransactionsScreen() {
         </View>
       )}
 
+      {/* Transaction list */}
       {loading ? (
         <ActivityIndicator color="#2dd4bf" style={{ marginTop: 60 }} />
       ) : transactions.length === 0 ? (
@@ -187,7 +235,7 @@ export default function TransactionsScreen() {
                     <Text style={[styles.txAmount, tx.type === 'expense' ? styles.expenseText : styles.incomeText]}>
                       {tx.type === 'expense' ? '–' : '+'} ${Number(tx.amount).toFixed(2)}
                     </Text>
-                    <TouchableOpacity onPress={() => deleteTransaction(tx.id)}>
+                    <TouchableOpacity onPress={() => confirmDelete(tx.id)}>
                       <Text style={styles.deleteText}>Delete</Text>
                     </TouchableOpacity>
                   </View>
@@ -207,51 +255,43 @@ const styles = StyleSheet.create({
 
   filterRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   pill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#1c1c1e',
-    borderWidth: 1,
-    borderColor: '#2c2c2e',
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+    backgroundColor: '#1c1c1e', borderWidth: 1, borderColor: '#2c2c2e',
   },
   pillActive: { backgroundColor: '#2c2c2e', borderColor: '#4b5563' },
   pillText: { fontSize: 13, fontWeight: '600', color: '#8e8e93' },
   pillTextActive: { color: '#ffffff' },
 
   filterPanel: {
-    backgroundColor: '#0f0f0f',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#1c1c1e',
+    backgroundColor: '#0f0f0f', borderRadius: 16, padding: 16,
+    marginBottom: 16, borderWidth: 1, borderColor: '#1c1c1e',
   },
-  filterLabel: { fontSize: 10, fontWeight: '700', color: '#4b5563', letterSpacing: 1.2, marginBottom: 8, marginTop: 4 },
-  filterInput: {
-    backgroundColor: '#1c1c1e',
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 15,
-    color: '#ffffff',
-    marginBottom: 14,
+  filterLabel: {
+    fontSize: 10, fontWeight: '700', color: '#4b5563',
+    letterSpacing: 1.2, marginBottom: 10, marginTop: 4,
   },
+
+  catScroll: { marginBottom: 14 },
+  catScrollContent: { gap: 8, paddingBottom: 2 },
+  catPill: {
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+    backgroundColor: '#1c1c1e', borderWidth: 1, borderColor: '#2c2c2e',
+  },
+  catPillActive: { backgroundColor: '#2dd4bf', borderColor: '#2dd4bf' },
+  catPillText: { fontSize: 13, fontWeight: '600', color: '#8e8e93' },
+  catPillTextActive: { color: '#000000' },
+
   typeRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
   typePill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#1c1c1e',
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#1c1c1e',
   },
   typePillActive: { backgroundColor: '#2dd4bf' },
   typePillText: { fontSize: 13, fontWeight: '600', color: '#8e8e93' },
   typePillTextActive: { color: '#000000' },
+
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   datePill: {
-    flex: 1,
-    backgroundColor: '#1c1c1e',
-    borderRadius: 10,
-    padding: 12,
-    alignItems: 'center',
+    flex: 1, backgroundColor: '#1c1c1e', borderRadius: 10, padding: 12, alignItems: 'center',
   },
   datePillText: { fontSize: 14, color: '#ffffff', fontWeight: '500' },
   datePillPlaceholder: { color: '#4b5563' },
@@ -260,30 +300,17 @@ const styles = StyleSheet.create({
   empty: { paddingTop: 60, alignItems: 'center' },
   emptyTitle: { fontSize: 17, fontWeight: '700', color: '#ffffff', marginBottom: 8 },
   emptySubtitle: { fontSize: 14, color: '#4b5563' },
-
   resultCount: { fontSize: 13, color: '#4b5563', fontWeight: '600', marginBottom: 16 },
 
   dateHeader: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#4b5563',
-    letterSpacing: 1.2,
-    marginTop: 24,
-    marginBottom: 8,
+    fontSize: 11, fontWeight: '700', color: '#4b5563',
+    letterSpacing: 1.2, marginTop: 24, marginBottom: 8,
   },
-  txRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-  },
+  txRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
   txRowBorder: { borderBottomWidth: 1, borderBottomColor: '#1c1c1e' },
   txIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
+    width: 42, height: 42, borderRadius: 21,
+    justifyContent: 'center', alignItems: 'center', marginRight: 14,
   },
   txIconExpense: { backgroundColor: '#2d1515' },
   txIconIncome: { backgroundColor: '#0d2a25' },

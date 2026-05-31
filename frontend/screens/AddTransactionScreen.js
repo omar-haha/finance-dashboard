@@ -55,6 +55,29 @@ export default function AddTransactionScreen() {
     setNewCategoryName('');
   };
 
+  const confirmDeleteCategory = (id, name) => {
+    Alert.alert(
+      'Delete Category',
+      `Delete "${name}"? Existing transactions won't be affected.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await axios.delete(`${CATEGORIES_URL}/${id}`);
+              setCategories(prev => prev.filter(c => c.id !== id));
+              if (form.category === name) setForm(p => ({ ...p, category: '' }));
+            } catch {
+              Alert.alert('Error', 'Could not delete category.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const saveNewCategory = async () => {
     const name = newCategoryName.trim();
     if (!name) return;
@@ -175,7 +198,16 @@ export default function AddTransactionScreen() {
             renderItem={({ item }) => (
               <TouchableOpacity style={styles.catOption} onPress={() => selectCategory(item.name)}>
                 <Text style={styles.catOptionText}>{item.name}</Text>
-                {form.category === item.name && <Text style={styles.catCheck}>✓</Text>}
+                <View style={styles.catOptionActions}>
+                  {form.category === item.name && <Text style={styles.catCheck}>✓</Text>}
+                  <TouchableOpacity
+                    onPress={() => confirmDeleteCategory(item.id, item.name)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={styles.catDeleteBtn}
+                  >
+                    <Text style={styles.catDeleteText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
               </TouchableOpacity>
             )}
             ItemSeparatorComponent={() => <View style={styles.catSep} />}
@@ -282,8 +314,11 @@ const styles = StyleSheet.create({
   sheetEmpty: { color: '#4b5563', fontSize: 14, textAlign: 'center', paddingVertical: 24 },
   catList: { maxHeight: 300 },
   catOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15 },
-  catOptionText: { fontSize: 16, color: '#ffffff', fontWeight: '500' },
+  catOptionText: { fontSize: 16, color: '#ffffff', fontWeight: '500', flex: 1 },
+  catOptionActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   catCheck: { fontSize: 16, color: '#2dd4bf', fontWeight: '700' },
+  catDeleteBtn: { padding: 2 },
+  catDeleteText: { fontSize: 14, color: '#4b5563', fontWeight: '600' },
   catSep: { height: 1, backgroundColor: '#1c1c1e' },
   sheetFooter: { paddingTop: 14, borderTopWidth: 1, borderTopColor: '#1c1c1e', marginTop: 4 },
   addNewBtn: { paddingVertical: 14, alignItems: 'center' },
