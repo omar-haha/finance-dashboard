@@ -9,7 +9,8 @@ A personal finance tracker for Android. Log income and expenses, visualise spend
 
 ## Screenshots
 
-<img width="270" height="585" alt="Screenshot_20260531_152241_Finance Dashboard" src="https://github.com/user-attachments/assets/cd0d2847-456f-4e0a-9525-e59cdbefa19e" /> <img width="270" height="585" alt="Screenshot_20260531_152333_Finance Dashboard" src="https://github.com/user-attachments/assets/f7aa9c79-8d9a-4d46-a94c-88c416bc0524" /> <img width="270" height="585" alt="Screenshot_20260531_153650_Finance Dashboard" src="https://github.com/user-attachments/assets/402c1c0c-ea81-4a49-8c12-5ece66700fa6" />
+<img width="270" height="585" alt="Screenshot_20260531_152241_Finance Dashboard" src="https://github.com/user-attachments/assets/cd0d2847-456f-4e0a-9525-e59cdbefa19e" /> <img width="270" height="585" alt="Screenshot_20260531_152333_Finance Dashboard" src="https://github.com/user-attachments/assets/f7aa9c79-8d9a-4d46-a94c-88c416bc0524" /> <img width="270" height="585" alt="Screenshot_20260531_153913_Finance Dashboard" src="https://github.com/user-attachments/assets/a3821e51-c24e-446c-8446-364389782157" />
+
 
 
 ---
