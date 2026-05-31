@@ -4,6 +4,7 @@ import {
   ActivityIndicator, TextInput, Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { StatusBar } from 'expo-status-bar';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
 import { BACKEND_URL } from '../config';
@@ -63,6 +64,7 @@ export default function TransactionsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <StatusBar style="dark" />
 
       {/* Filter toggle */}
       <TouchableOpacity style={styles.filterToggle} onPress={() => setFiltersOpen((v) => !v)} activeOpacity={0.7}>
