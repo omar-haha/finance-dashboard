@@ -21,24 +21,22 @@ export default function App() {
             };
             return <Ionicons name={icons[route.name]} size={size} color={color} />;
           },
-          tabBarActiveTintColor: '#2a9d8f',
-          tabBarInactiveTintColor: '#9ca3af',
+          tabBarActiveTintColor: '#2dd4bf',
+          tabBarInactiveTintColor: '#475569',
           tabBarStyle: {
-            backgroundColor: '#ffffff',
-            borderTopColor: '#f1f3f6',
-            paddingBottom: 4,
+            backgroundColor: '#0f172a',
+            borderTopWidth: 0,
+            height: 60,
+            paddingBottom: 8,
+            paddingTop: 4,
           },
           headerStyle: { backgroundColor: '#ffffff', elevation: 0, shadowOpacity: 0 },
-          headerTitleStyle: { fontWeight: '700', fontSize: 18 },
+          headerTitleStyle: { fontWeight: '700', fontSize: 18, color: '#0f172a' },
         })}
       >
-        <Tab.Screen name="Dashboard" component={DashboardScreen} />
+        <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
         <Tab.Screen name="Transactions" component={TransactionsScreen} />
-        <Tab.Screen
-          name="Add"
-          component={AddTransactionScreen}
-          options={{ title: 'Add Transaction' }}
-        />
+        <Tab.Screen name="Add" component={AddTransactionScreen} options={{ title: 'Add Transaction' }} />
       </Tab.Navigator>
     </NavigationContainer>
   );

@@ -28,12 +28,7 @@ export default function AddTransactionScreen() {
   );
 
   const openDatePicker = () => {
-    if (form.date) {
-      const [year, month, day] = form.date.split('-').map(Number);
-      setSelectedDate(new Date(year, month - 1, day));
-    } else {
-      setSelectedDate(new Date());
-    }
+    setSelectedDate(form.date ? new Date(...form.date.split('-').map((v, i) => i === 1 ? Number(v) - 1 : Number(v))) : new Date());
     setShowDatePicker(true);
   };
 
@@ -63,11 +58,10 @@ export default function AddTransactionScreen() {
       setCategories((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
       selectCategory(data.name);
     } catch (err) {
-      if (err.response?.status === 409) {
-        Alert.alert('Already exists', `"${name}" is already a category.`);
-      } else {
-        Alert.alert('Error', 'Could not save category.');
-      }
+      Alert.alert(
+        err.response?.status === 409 ? 'Already exists' : 'Error',
+        err.response?.status === 409 ? `"${name}" is already a category.` : 'Could not save category.'
+      );
     }
   };
 
@@ -81,7 +75,7 @@ export default function AddTransactionScreen() {
       await axios.post(BACKEND_URL, { ...form, amount: Number(form.amount) });
       setForm({ title: '', category: '', amount: '', type: 'expense', date: '' });
       Alert.alert('Saved', 'Transaction added successfully.');
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Could not save transaction. Check your connection.');
     } finally {
       setSaving(false);
@@ -92,36 +86,36 @@ export default function AddTransactionScreen() {
     <>
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
-          <Text style={styles.fieldLabel}>Title</Text>
+          <Text style={styles.fieldLabel}>TITLE</Text>
           <TextInput
             style={styles.input}
             placeholder="e.g. Grocery run"
-            placeholderTextColor="#b0b7c3"
+            placeholderTextColor="#94a3b8"
             value={form.title}
             onChangeText={(v) => setForm((p) => ({ ...p, title: v }))}
           />
 
-          <Text style={styles.fieldLabel}>Category</Text>
-          <TouchableOpacity style={styles.pickerButton} onPress={() => setShowCategoryModal(true)}>
-            <Text style={[styles.pickerButtonText, !form.category && styles.placeholder]}>
+          <Text style={styles.fieldLabel}>CATEGORY</Text>
+          <TouchableOpacity style={styles.pickerRow} onPress={() => setShowCategoryModal(true)}>
+            <Text style={[styles.pickerText, !form.category && styles.pickerPlaceholder]}>
               {form.category || 'Select a category'}
             </Text>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
 
-          <Text style={styles.fieldLabel}>Amount</Text>
+          <Text style={styles.fieldLabel}>AMOUNT</Text>
           <TextInput
             style={styles.input}
             placeholder="0.00"
-            placeholderTextColor="#b0b7c3"
+            placeholderTextColor="#94a3b8"
             keyboardType="numeric"
             value={form.amount}
             onChangeText={(v) => setForm((p) => ({ ...p, amount: v }))}
           />
 
-          <Text style={styles.fieldLabel}>Date</Text>
-          <TouchableOpacity style={styles.pickerButton} onPress={openDatePicker}>
-            <Text style={[styles.pickerButtonText, !form.date && styles.placeholder]}>
+          <Text style={styles.fieldLabel}>DATE</Text>
+          <TouchableOpacity style={styles.pickerRow} onPress={openDatePicker}>
+            <Text style={[styles.pickerText, !form.date && styles.pickerPlaceholder]}>
               {form.date || 'Select a date'}
             </Text>
             <Text style={styles.chevron}>›</Text>
@@ -135,79 +129,71 @@ export default function AddTransactionScreen() {
             />
           )}
 
-          <Text style={styles.fieldLabel}>Type</Text>
+          <Text style={styles.fieldLabel}>TYPE</Text>
           <View style={styles.typeRow}>
             <TouchableOpacity
               style={[styles.typeButton, form.type === 'expense' && styles.typeButtonExpense]}
               onPress={() => setForm((p) => ({ ...p, type: 'expense' }))}
             >
-              <Text style={[styles.typeButtonText, form.type === 'expense' && styles.typeButtonTextExpense]}>
-                Expense
-              </Text>
+              <Text style={[styles.typeButtonText, form.type === 'expense' && styles.typeButtonTextExpense]}>Expense</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.typeButton, form.type === 'income' && styles.typeButtonIncome]}
               onPress={() => setForm((p) => ({ ...p, type: 'income' }))}
             >
-              <Text style={[styles.typeButtonText, form.type === 'income' && styles.typeButtonTextIncome]}>
-                Income
-              </Text>
+              <Text style={[styles.typeButtonText, form.type === 'income' && styles.typeButtonTextIncome]}>Income</Text>
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity style={styles.saveButton} onPress={submit} disabled={saving}>
-            <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save Transaction'}</Text>
+            <Text style={styles.saveButtonText}>{saving ? 'Saving…' : 'Save Transaction'}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* Category picker modal */}
       <Modal visible={showCategoryModal} transparent animationType="slide" onRequestClose={() => setShowCategoryModal(false)}>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => { setShowCategoryModal(false); setAddingNew(false); setNewCategoryName(''); }} />
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalSheet}>
-          <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>Select Category</Text>
-
-          {categories.length === 0 && !addingNew ? (
-            <Text style={styles.emptyText}>No categories yet. Add your first one below.</Text>
-          ) : (
-            <FlatList
-              data={categories}
-              keyExtractor={(item) => String(item.id)}
-              style={styles.categoryList}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={styles.categoryOption} onPress={() => selectCategory(item.name)}>
-                  <Text style={styles.categoryOptionText}>{item.name}</Text>
-                  {form.category === item.name && <Text style={styles.checkmark}>✓</Text>}
-                </TouchableOpacity>
-              )}
-              ItemSeparatorComponent={() => <View style={styles.separator} />}
-            />
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => { setShowCategoryModal(false); setAddingNew(false); setNewCategoryName(''); }} />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheet}>
+          <View style={styles.sheetHandle} />
+          <Text style={styles.sheetTitle}>Category</Text>
+          {categories.length === 0 && !addingNew && (
+            <Text style={styles.sheetEmpty}>No categories yet. Add your first one below.</Text>
           )}
-
-          <View style={styles.modalFooter}>
+          <FlatList
+            data={categories}
+            keyExtractor={(item) => String(item.id)}
+            style={styles.catList}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={styles.catOption} onPress={() => selectCategory(item.name)}>
+                <Text style={styles.catOptionText}>{item.name}</Text>
+                {form.category === item.name && <Text style={styles.catCheck}>✓</Text>}
+              </TouchableOpacity>
+            )}
+            ItemSeparatorComponent={() => <View style={styles.catSep} />}
+          />
+          <View style={styles.sheetFooter}>
             {addingNew ? (
-              <View style={styles.newCategoryRow}>
+              <View style={styles.newRow}>
                 <TextInput
-                  style={styles.newCategoryInput}
+                  style={styles.newInput}
                   placeholder="Category name"
-                  placeholderTextColor="#b0b7c3"
+                  placeholderTextColor="#94a3b8"
                   value={newCategoryName}
                   onChangeText={setNewCategoryName}
                   autoFocus
                   returnKeyType="done"
                   onSubmitEditing={saveNewCategory}
                 />
-                <TouchableOpacity style={styles.saveNewButton} onPress={saveNewCategory}>
-                  <Text style={styles.saveNewButtonText}>Add</Text>
+                <TouchableOpacity style={styles.newSaveBtn} onPress={saveNewCategory}>
+                  <Text style={styles.newSaveBtnText}>Add</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.cancelNewButton} onPress={() => { setAddingNew(false); setNewCategoryName(''); }}>
-                  <Text style={styles.cancelNewButtonText}>Cancel</Text>
+                <TouchableOpacity onPress={() => { setAddingNew(false); setNewCategoryName(''); }} style={styles.newCancelBtn}>
+                  <Text style={styles.newCancelText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.addNewButton} onPress={() => setAddingNew(true)}>
-                <Text style={styles.addNewButtonText}>+ New Category</Text>
+              <TouchableOpacity style={styles.addNewBtn} onPress={() => setAddingNew(true)}>
+                <Text style={styles.addNewBtnText}>+ New Category</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -218,85 +204,83 @@ export default function AddTransactionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#eef2f7' },
+  container: { flex: 1, backgroundColor: '#f8fafc' },
   content: { padding: 16, paddingBottom: 32 },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6, marginTop: 4 },
+  fieldLabel: { fontSize: 10, fontWeight: '700', color: '#94a3b8', letterSpacing: 1.2, marginBottom: 8, marginTop: 8 },
   input: {
-    borderWidth: 1,
-    borderColor: '#d7dce3',
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
     borderRadius: 12,
-    padding: 13,
-    marginBottom: 14,
-    backgroundColor: '#fafbff',
+    padding: 14,
+    marginBottom: 4,
+    backgroundColor: '#f8fafc',
     fontSize: 15,
-    color: '#1a1a1a',
+    color: '#0f172a',
   },
-  pickerButton: {
+  pickerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#d7dce3',
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
     borderRadius: 12,
-    padding: 13,
-    marginBottom: 14,
-    backgroundColor: '#fafbff',
+    padding: 14,
+    marginBottom: 4,
+    backgroundColor: '#f8fafc',
   },
-  pickerButtonText: { fontSize: 15, color: '#1a1a1a', fontWeight: '500' },
-  placeholder: { color: '#b0b7c3', fontWeight: '400' },
-  chevron: { fontSize: 20, color: '#9ca3af', lineHeight: 22 },
-  typeRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  pickerText: { fontSize: 15, color: '#0f172a', fontWeight: '500' },
+  pickerPlaceholder: { color: '#94a3b8', fontWeight: '400' },
+  chevron: { fontSize: 22, color: '#94a3b8', lineHeight: 24 },
+  typeRow: { flexDirection: 'row', gap: 10, marginBottom: 24, marginTop: 4 },
   typeButton: {
-    flex: 1, padding: 13, borderRadius: 12, borderWidth: 1,
-    borderColor: '#d7dce3', alignItems: 'center', backgroundColor: '#fafbff',
+    flex: 1, padding: 14, borderRadius: 12, borderWidth: 1.5,
+    borderColor: '#e2e8f0', alignItems: 'center', backgroundColor: '#f8fafc',
   },
   typeButtonExpense: { backgroundColor: '#fff0f3', borderColor: '#ef476f' },
   typeButtonIncome: { backgroundColor: '#edfaf7', borderColor: '#2a9d8f' },
-  typeButtonText: { fontWeight: '600', color: '#9ca3af', fontSize: 15 },
+  typeButtonText: { fontWeight: '700', color: '#94a3b8', fontSize: 15 },
   typeButtonTextExpense: { color: '#ef476f' },
   typeButtonTextIncome: { color: '#2a9d8f' },
-  saveButton: { backgroundColor: '#2a9d8f', borderRadius: 12, padding: 15, alignItems: 'center' },
-  saveButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  saveButton: { backgroundColor: '#0f172a', borderRadius: 14, padding: 16, alignItems: 'center' },
+  saveButtonText: { color: '#ffffff', fontWeight: '700', fontSize: 16, letterSpacing: 0.3 },
   // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  modalSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 16,
-    paddingBottom: 32,
+  overlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.5)' },
+  sheet: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingBottom: 36,
     maxHeight: '70%',
   },
-  modalHandle: { width: 40, height: 4, backgroundColor: '#d7dce3', borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 16 },
-  modalTitle: { fontSize: 17, fontWeight: '700', color: '#1a1a1a', marginBottom: 12 },
-  emptyText: { color: '#9ca3af', fontSize: 14, textAlign: 'center', paddingVertical: 20 },
-  categoryList: { maxHeight: 300 },
-  categoryOption: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 14, paddingHorizontal: 4,
+  sheetHandle: { width: 36, height: 4, backgroundColor: '#e2e8f0', borderRadius: 2, alignSelf: 'center', marginTop: 14, marginBottom: 18 },
+  sheetTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a', marginBottom: 12 },
+  sheetEmpty: { color: '#94a3b8', fontSize: 14, textAlign: 'center', paddingVertical: 24 },
+  catList: { maxHeight: 300 },
+  catOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 2 },
+  catOptionText: { fontSize: 16, color: '#0f172a', fontWeight: '500' },
+  catCheck: { fontSize: 16, color: '#2a9d8f', fontWeight: '700' },
+  catSep: { height: 1, backgroundColor: '#f1f5f9' },
+  sheetFooter: { paddingTop: 14, borderTopWidth: 1, borderTopColor: '#f1f5f9', marginTop: 4 },
+  addNewBtn: { paddingVertical: 14, alignItems: 'center' },
+  addNewBtnText: { fontSize: 15, fontWeight: '700', color: '#2a9d8f' },
+  newRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  newInput: {
+    flex: 1, borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 10,
+    padding: 12, fontSize: 15, color: '#0f172a', backgroundColor: '#f8fafc',
   },
-  categoryOptionText: { fontSize: 16, color: '#1a1a1a' },
-  checkmark: { fontSize: 16, color: '#2a9d8f', fontWeight: '700' },
-  separator: { height: 1, backgroundColor: '#f1f3f6' },
-  modalFooter: { paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f1f3f6', marginTop: 8 },
-  addNewButton: { paddingVertical: 14, alignItems: 'center' },
-  addNewButtonText: { fontSize: 15, fontWeight: '600', color: '#2a9d8f' },
-  newCategoryRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  newCategoryInput: {
-    flex: 1, borderWidth: 1, borderColor: '#d7dce3', borderRadius: 10,
-    padding: 11, fontSize: 15, color: '#1a1a1a', backgroundColor: '#fafbff',
-  },
-  saveNewButton: { backgroundColor: '#2a9d8f', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11 },
-  saveNewButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  cancelNewButton: { paddingHorizontal: 8, paddingVertical: 11 },
-  cancelNewButtonText: { color: '#9ca3af', fontSize: 14 },
+  newSaveBtn: { backgroundColor: '#0f172a', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12 },
+  newSaveBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 14 },
+  newCancelBtn: { paddingHorizontal: 6, paddingVertical: 12 },
+  newCancelText: { color: '#94a3b8', fontSize: 14 },
 });
